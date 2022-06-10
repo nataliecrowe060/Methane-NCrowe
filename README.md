@@ -1,2 +1,3 @@
 # Methane-NCrowe
- Hector Methane analysis- SULI summer 2022
+My Methane analysis using SCM Hector
+ SULI summer 2022
