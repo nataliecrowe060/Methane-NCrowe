@@ -1,11 +1,75 @@
 ---
-title: "Methane"
+title: "Methane in Hector"
 author: "Natalie Crowe"
 date: "`r Sys.Date()`"
-output: html_document
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    code_folding: hide
+    theme: readable
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+## Building a Hector Core
+
+Our first step is to create a core. Hector will use this to pull data from existing climate projections. Our projections will be from RCP 4.5.
+
+```{r  Hector core}
+library(hector)
+library(ggplot2)
+ini_file <- system.file("input/hector_ssp245.ini", package = "hector")
+core <- newcore(ini_file)
+run(core)
+```
+
+## Methane Emmisions Data and Graph
+
+After creating the core we then tell hector to provide data for `EMISSIONS_CH4()` between the years of 1795 and 2100. Hector has several options that relate to methane- these include: emissions, concentration, postindustrial, natural, soil lifetime and stratosphere lifetime.
+
+```{r Emissions data frame}
+results<- fetchvars(core, 1795:2100, EMISSIONS_CH4())
+head(results)
+```
+
+### Plot Results Methane Emissions
+
+Now we have all the things we need to build a simple plot of methane emissions between the years 1795 and 2100. Ggplot2 is helpful for making graphs quickly and simply. We already loaded this package at the beginning of this file. 
+
+```{r Emissions plot}
+ggplot(data= results, aes(x= year, y= value))+
+    geom_line(color="blue")+
+    labs(x = "Year",
+         y = "Methane Emissions",
+         title = "Methane Emissions 1795-2100 RCP 4.5")
+```
+
+## Methane Concentrations
+
+By changing the input `EMISSION_CH4()` to `CONCINTRATIONS_CH4()` we can replicate our code to get different visualized data. To keep things clear these new results are named `results_2`, we also  change the graph name to reflect what is being shown.
+
+```{r Concintration graph}
+results_2<- fetchvars(core, 1795:2100, CONCENTRATIONS_CH4())
+library(ggplot2)
+ggplot(data= results_2, aes(x= year, y= value, ))+
+    geom_line(color= "red")+
+    labs(x = "Year",
+         y = "Methane Concentration",
+         title = "Methane Concentration 1795-2100 RCP 4.5")
+```
+
+## Compaire Through Plots
+
+We can put these two results into a single graph...
+```{r Compair graph}
+ggplot()+
+    geom_line(data=results, aes(x= year, y= value), color="blue")+
+    geom_line(data= results_2, aes(x= year, y= value), color= "red")+
+    labs(x = "Year",
+         y = "Methane Concentration",
+         title = "Methane Concentration/Emission 1795-2100 RCP 4.5")
+```
+... to show our data side-by-side.
