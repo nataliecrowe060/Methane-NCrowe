@@ -16,9 +16,9 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ## Building a Hector Core
 
-Our first step is to create a core. Hector will use this to pull data from existing climate projections. Our projections will be from RCP 4.5.
+Our first step is to create a core. Hector will use this to pull data from existing climate projections. Our projections will be from SSP245.
 
-```{r  Hector core}
+```{r  Hector-core, message=FALSE}
 library(hector)
 library(ggplot2)
 library(dplyr)
@@ -27,15 +27,15 @@ core <- newcore(ini_file)
 run(core)
 ```
 
-## Methane Emmisions Data and Graph
+## Methane Emissions Data and Graph
 
 After creating and running the core we query it for methane-related outputs
 between the years of 1795 and 2100. Hector has several options that relate to methane, including emissions, concentration, postindustrial, natural, soil lifetime and stratosphere lifetime.
 
-```{r Emissions data frame}
+```{r Emissions-data-frame}
 results<- fetchvars(core, 1795:2100, c(EMISSIONS_CH4(),
                                        CONCENTRATIONS_CH4()))
-shutdown(core)
+invisible(shutdown(core))
 head(results)
 ```
 
@@ -43,38 +43,39 @@ head(results)
 
 Now we have all the things we need to build a simple plot of methane emissions between the years 1795 and 2100. The `ggplot2` package is helpful for making graphs quickly and simply. We already loaded this package at the beginning of this file. 
 
-```{r Emissions plot}
+```{r Emissions-plot}
 results %>% 
   filter(variable == EMISSIONS_CH4()) %>% 
   ggplot(aes(x= year, y= value))+
     geom_line(color="blue")+
     labs(x = "Year",
          y = "Methane Emissions (Tg)",
-         title = "Methane Emissions 1795-2100 RCP 4.5")
+         title = "Methane Emissions 1795-2100 in SSP245")
 ```
 
 ## Methane Concentrations
 
-By changing the input `EMISSION_CH4()` to `CONCENTRATIONS_CH4()` we can replicate our code to get different visualized data. To keep things clear these new results are named `results_2`, we also  change the graph name to reflect what is being shown.
+By changing the input `EMISSION_CH4()` to `CONCENTRATIONS_CH4()` we can replicate our code to get different visualized data.
 
-```{r Concentration graph}
+```{r Concentration-graph}
 results %>% 
   filter(variable == CONCENTRATIONS_CH4()) %>% 
-  ggplot(aes(x= year, y= value, ))+
+  ggplot(aes(x= year, y= value))+
     geom_line(color= "red")+
     labs(x = "Year",
-         y = "Methane Concentration",
-         title = "Methane Concentration 1795-2100 RCP 4.5")
+         y = "Methane Concentration (ppbv)",
+         title = "Methane Concentration 1795-2100 in SSP245")
 ```
 
 ## Comparison Plots
 
 We can put these two results into a single graph...
-```{r Comparison graph}
+```{r Comparison-graph}
 ggplot(data= results, aes(x= year, y= value, color= variable))+
     geom_line()+
     labs(x = "Year",
          y = "Methane Concentration",
-         title = "Methane Concentration/Emission 1795-2100 RCP 4.5")
+         title = "Methane Concentration/Emission 1795-2100 in SSP245",
+         color = "Variable")
 ```
 ... to show our data side-by-side.
