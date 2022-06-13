@@ -67,6 +67,26 @@ results %>%
          title = "Methane Concentration 1745-2100 in SSP245")
 ```
 
+### Adding Another Dataframe
+Let’s compare this data to NOAA’s data of yearly mean CH4 increase. We first have to read the file using read.table, then we can assign names to each column.
+```{r}
+noaa<- read.table("noaa_data/ch4_annmean_gl.txt.txt", skip = 61)
+noaa %>%
+  rename(year = V1, mean = V2, unc = V3)
+```
+We can then plot for the NOAA data.
+
+```{r}
+noaa %>%
+  rename(year = V1, mean = V2, unc = V3)%>%
+  ggplot(aes(x= year, y= mean))+
+  geom_line(color= "green") +
+  labs(x = "Year",
+       y = "Increase of CH4 (ppb)",
+       title = "NOAA- Annuel Global Increase of CH4")
+```
+
+
 ## Comparison Plots
 
 We can put these two results into a single graph...
