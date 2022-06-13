@@ -70,15 +70,59 @@ results %>%
 ### Adding Another Dataframe
 Let’s compare this data to NOAA’s data of yearly mean CH4 increase. We first have to read the file using read.table, then we can assign names to each column.
 ```{r}
-noaa<- read.table("noaa_data/ch4_annmean_gl.txt.txt", skip = 61)
-noaa %>%
-  rename(year = V1, mean = V2, unc = V3)
+noaa <- read.table("noaa_data/ch4_annmean_gl.txt.txt", skip = 61)
+
+noaa_data <- noaa %>%
+  rename(year = V1, mean = V2, unc = V3) %>%
+  # Remove this column to keep only what the NOAA and Hector data sets have in common
+  select(-unc)
+
+hector_data <- results %>%
+  # Pull out only the years of the NOAA dataset and just the CH4 concentration values
+  filter(year %in% noaa_data$year,
+         variable == "CH4_concentration") %>%
+  # We only care about the year and mean because that's what we have in common with NOAA
+  select(year,
+         mean = value)
+
+# We will use the same datasets for both examples
+
+## Method 1 for plotting
+# Use an empty ggplot call, then pass in individual data and aes arguments to 
+# two distinct geom calls
+# Using the color = "noaa" argument will tell ggplot to give the geom_line
+# a color and to report the value in the legend as "noaa"
+ggplot() +
+  geom_line(data = noaa_data, aes(x = year, y = mean, color = "NOAA")) +
+  geom_line(data = hector_data, aes(x = year, y = mean, color = "Hector")) +
+  labs(x = "Year", 
+       y = "ppb",
+       color = "Source")
+
+## Method 2 for plotting
+# Combine data frames into one using bind_rows()
+# Assign identifier so that we can separate the data later
+noaa_data2 <- noaa_data %>%
+  mutate(source = "NOAA")
+
+hector_data2 <- hector_data %>%
+  mutate(source = "Hector")
+
+# Combine
+plot_data <- bind_rows(noaa_data2, hector_data2) 
+
+# Plot like you would normally, and specify color by source
+ggplot(plot_data, aes(x = year, y = mean, color = source)) +
+  geom_line()  +
+  labs(x = "Year", 
+       y = "ppb",
+       color = "Source")
+
 ```
 We can then plot for the NOAA data.
 
 ```{r}
-noaa %>%
-  rename(year = V1, mean = V2, unc = V3)%>%
+noaa_data %>%
   ggplot(aes(x= year, y= mean))+
   geom_line(color= "green") +
   labs(x = "Year",
