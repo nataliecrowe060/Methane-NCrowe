@@ -76,6 +76,6 @@ ggplot(data= results, aes(x= year, y= value, color= units))+
     labs(x = "Year",
          y = NULL,
          title = "Methane Concentration/Emission 1745-2100 in SSP245",
-         color = "Variable") + facet_wrap(~variable)
+         color = "Units") + facet_wrap(~variable)
 ```
 ... to show our data side-by-side.
