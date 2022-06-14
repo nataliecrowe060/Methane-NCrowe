@@ -69,21 +69,33 @@ results %>%
 
 ### Adding Another Dataframe
 Let’s compare this data to NOAA’s data of yearly mean CH4 increase. We first have to read the file using read.table, then we can assign names to each column.
-```{r}
+```{r noaa-data}
 noaa<- read.table("noaa_data/ch4_annmean_gl.txt.txt", skip = 61)
-noaa %>%
-  rename(year = V1, mean = V2, unc = V3)
-```
-We can then plot for the NOAA data.
+noaa_data <- noaa %>%
+  rename(year = V1, mean = V2, unc = V3) %>%
+  select(-unc)
 
-```{r}
-noaa %>%
-  rename(year = V1, mean = V2, unc = V3)%>%
-  ggplot(aes(x= year, y= mean))+
-  geom_line(color= "green") +
-  labs(x = "Year",
-       y = "Increase of CH4 (ppb)",
-       title = "NOAA- Annuel Global Increase of CH4")
+```
+
+We then tell hector we want to look at CH4 concentration in the years corisponding to the NOAA data.
+
+```{r hector-data}
+hector_data <- results %>%
+  filter(year %in% noaa_data$year,
+         variable == "CH4_concentration") %>%
+   select(year,
+         mean = value)
+```
+
+We can then plot for the hector and NOAA data at once.
+
+```{r NOAA-plot}
+ggplot() +
+  geom_line(data = noaa_data, aes(x = year, y = mean, color = "NOAA")) +
+  geom_line(data = hector_data, aes(x = year, y = mean, color = "Hector")) +
+  labs(x = "Year", 
+       y = "ppb",
+       color = "Source")
 ```
 
 
