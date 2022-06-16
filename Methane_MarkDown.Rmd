@@ -33,7 +33,7 @@ After creating and running the core we query it for methane-related outputs
 between the years of 1745 and 2100. Hector has several options that relate to methane, including emissions, concentration, postindustrial, natural, soil lifetime and stratosphere lifetime.
 
 ```{r Emissions-data-frame}
-results<- fetchvars(core, 1745:2100, c(EMISSIONS_CH4(),                              CONCENTRATIONS_CH4(), LIFETIME_STRAT()))
+results<- fetchvars(core, 1745:2100, c(EMISSIONS_CH4(), CONCENTRATIONS_CH4()))
 invisible(shutdown(core))
 head(results)
 ```
@@ -113,16 +113,18 @@ ggplot(data= results, aes(x= year, y= value, color= units))+
 
 ## Sensitivity Analysis
 
-To examine SSP245's methane perimeter sensitivity we first 
+To examine SSP245's Natural methane  sensitivity we first ask hector to fetch the data. Then, we 
 
 ```{r run-with-parameters}
+run(core)
+paramr<- fetchvars(core, NA, NATURAL_CH4())
 param<- function(core, parameter, value) {
   old_value <- fetchvars(core, NA, parameter)
   unit <- as.character(old_value[["units"]])
-  setvar(core, NA, parameter, value, unit)
+  setvar(core, NA, parameter, 358.05, unit)
   reset(core)
   run(core)
-  result <- fetchvars(core, 1745:2100)
+  result <- fetchvars(core, 2000:2100)
   result[["parameter_value"]] <- value
   result
 }
@@ -136,6 +138,15 @@ run_with_param_range <- function(core, parameter, values) {
 ```
 
 ```{r}
-sensitivity_emission <- run_with_param_range(core, LIFETIME_STRAT(), seq(0, 1, 0.05))
+sensitivity_emission <- run_with_param_range(core, NATURAL_CH4(), seq(0, 1, 0.05))
+```
+
+```{r}
+ggplot(sensitivity_emission) +
+  aes(x = year, y = value, color = parameter_value, group = parameter_value) +
+  geom_line() +
+  facet_wrap(~variable, scales = "free_y") +
+  guides(color = guide_colorbar(title = expression(NATURAL_CH4()))) +
+  scale_color_viridis_c() 
 ```
 
