@@ -113,9 +113,10 @@ ggplot(data= results, aes(x= year, y= value, color= units))+
 
 ## Sensitivity Analysis
 
-To examine SSP245's Natural methane  sensitivity we first ask hector to fetch the data. Then, we 
+To examine SSP245's Natural methane  sensitivity we first ask hector to fetch the data. We then create a function to run our parameter set to a particular value. In this case we set our value at `358.05`- twenty percent higher than the original value.
 
 ```{r run-with-parameters}
+core <- newcore(ini_file)
 run(core)
 paramr<- fetchvars(core, NA, NATURAL_CH4())
 param<- function(core, parameter, value) {
@@ -130,16 +131,17 @@ param<- function(core, parameter, value) {
 }
 ```
 
+Then we tell hector to runv a range of values.
+
 ```{r}
 run_with_param_range <- function(core, parameter, values) {
   mapped <- Map(function(x) param(core, parameter, x), values)
   Reduce(rbind, mapped)
 }
-```
-
-```{r}
 sensitivity_emission <- run_with_param_range(core, NATURAL_CH4(), seq(0, 1, 0.05))
 ```
+
+Once we have our differing parameter values we can create a graph.
 
 ```{r}
 ggplot(sensitivity_emission) +
