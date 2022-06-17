@@ -34,7 +34,6 @@ between the years of 1745 and 2100. Hector has several options that relate to me
 
 ```{r Emissions-data-frame}
 results<- fetchvars(core, 1745:2100, c(EMISSIONS_CH4(), CONCENTRATIONS_CH4()))
-invisible(shutdown(core))
 head(results)
 ```
 
@@ -122,7 +121,7 @@ paramr<- fetchvars(core, NA, NATURAL_CH4())
 param<- function(core, parameter, value) {
   old_value <- fetchvars(core, NA, parameter)
   unit <- as.character(old_value[["units"]])
-  setvar(core, NA, parameter, 358.05, unit)
+  setvar(core, NA, parameter, value, unit)
   reset(core)
   run(core)
   result <- fetchvars(core, 2000:2100)
@@ -131,14 +130,14 @@ param<- function(core, parameter, value) {
 }
 ```
 
-Then we tell hector to runv a range of values.
+Then we tell hector to run a range of values.
 
 ```{r}
 run_with_param_range <- function(core, parameter, values) {
   mapped <- Map(function(x) param(core, parameter, x), values)
   Reduce(rbind, mapped)
 }
-sensitivity_emission <- run_with_param_range(core, NATURAL_CH4(), seq(0, 1, 0.05))
+sensitivity_emission <- run_with_param_range(core, NATURAL_CH4(), seq(272.8, 358.05, 5))
 ```
 
 Once we have our differing parameter values we can create a graph.
@@ -148,7 +147,8 @@ ggplot(sensitivity_emission) +
   aes(x = year, y = value, color = parameter_value, group = parameter_value) +
   geom_line() +
   facet_wrap(~variable, scales = "free_y") +
-  guides(color = guide_colorbar(title = expression(NATURAL_CH4()))) +
+  labs(color = "NATURAL CH4") +
   scale_color_viridis_c() 
+invisible(shutdown(core))
 ```
 
