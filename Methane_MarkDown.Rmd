@@ -130,9 +130,9 @@ param<- function(core, parameter, value) {
 }
 ```
 
-Then we tell hector to run a range of values.
+Then we tell hector to run a range of values. In this case we ask for 20% above and bellow the set value of `NATURAL_CH4`(341Tg) at intervals of 5. 
 
-```{r}
+```{r sen-param}
 run_with_param_range <- function(core, parameter, values) {
   mapped <- Map(function(x) param(core, parameter, x), values)
   Reduce(rbind, mapped)
@@ -140,9 +140,9 @@ run_with_param_range <- function(core, parameter, values) {
 sensitivity_emission <- run_with_param_range(core, NATURAL_CH4(), seq(272.8, 358.05, 5))
 ```
 
-Once we have our differing parameter values we can create a graph.
+Once we have our differing parameter values we can create a graph. Using the graph function `facet_wrap`to separate the results based on variable. 
 
-```{r}
+```{r sen-graph}
 ggplot(sensitivity_emission) +
   aes(x = year, y = value, color = parameter_value, group = parameter_value) +
   geom_line() +
