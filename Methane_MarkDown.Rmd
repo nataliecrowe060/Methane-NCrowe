@@ -141,10 +141,9 @@ run_with_param_range <- function(core, parameter, values) {
   mapped <- Map(function(x) param(core, parameter, x), values)
   Reduce(rbind, mapped)
 }
-val<- paramr %>%
-  filter(value)
-firstValue <- val * (1 - 0.2)
-lastValue <- val * (1 + 0.2)
+x<- 341
+firstValue <- x * (1 - 0.2)
+lastValue <- x * (1 + 0.2)
 sensitivity_emission <- run_with_param_range(core, NATURAL_CH4(), seq(firstValue, lastValue, 5))
 ```
 
