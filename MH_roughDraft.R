@@ -10,4 +10,7 @@ France<- gapminder %>%
             sdlifeExp= sd(lifeExp)) 
 
 norm_France<- rnorm(1000, 74.3, 4.30)
-hist(norm_France)
+
+hist(norm_France, main= "Normal Dist of France Life exp")
+ggplot(norm_France, aes(x= lifeExp))+
+  geom_histogram()
