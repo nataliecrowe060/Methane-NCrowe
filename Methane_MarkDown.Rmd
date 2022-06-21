@@ -236,6 +236,17 @@ run_with_multi_param_range <- function(core, parameter_1, values_1, parameter_2,
 Setting sequences and running function
 
 ```{r}
+seq_function<- function(data, column) {
+  value<- data %>%
+    select(column)
+  alldata<- value$column
+  mean<- mean(alldata)
+  low<- mean * (1-0.2)
+  high<- mean * (1+0.2)
+  sequence<- seq(low, high, 5)
+}
+seq_function(data, value...2)
+
 valuen<- data %>%
   select(value...2)
 allnat<- valuen$value...2
