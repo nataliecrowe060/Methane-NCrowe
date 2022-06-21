@@ -138,11 +138,11 @@ run_with_param_range <- function(core, parameter, values) {
   mapped <- Map(function(x) param(core, parameter, x), values)
   Reduce(rbind, mapped)
 }
-x<- default %>%
+valuen<- default %>%
   select(value)
-y<- x$value
-ch4_low <- y * (1 - 0.2)
-ch4_high <- y * (1 + 0.2)
+meann<- valuen$value
+ch4_low <- meann * (1 - 0.2)
+ch4_high <- meann * (1 + 0.2)
 ch4_seq <- seq(ch4_low, ch4_high, 5)
 sensitivity_emission <- run_with_param_range(core, NATURAL_CH4(), ch4_seq)
 ```
@@ -162,16 +162,68 @@ ggplot(sensitivity_emission) +
 
 Using the same `Natural_CH4` data, we can also make a histogram plot. Since we already made `ch4_low` and `ch4_high` with levels +/-20%, we can re-purpose them for this graph.
 
-```{r}
-z<- y*0.2
-data<- data.frame(value= rnorm(1000, y, z))
+```{r rnorm}
+sdn<- meann*0.2
+data<- data.frame(value= rnorm(1000, meann, sdn))
 ```
 
 Then we can use `ggplot2` to create a histogram with the randomized values.
-```{r}
+```{r hist}
 ggplot(data, aes(x=value))+
   geom_histogram(binwidth = 1)+
   labs( x= "Natural CH4 Level", y= "count", main= "Natural CH4 Histogram")
 invisible(shutdown(core))
 ```
+
+
+## Multiple Parameter Run
+
+Working with two parameters `NATURAL_CH4` and `PREINDUSTRIAL_CH4`
+
+```{r core}
+core <- newcore(ini_file)
+run(core)
+results <- fetchvars(core, NA, c(NATURAL_CH4(), PREINDUSTRIAL_CH4()))
+```
+
+Normal Distribution
+
+```{r rnorm}
+nat_value<- results %>%
+  filter(variable== "CH4N") 
+nat_mean<- nat_value$value
+nat_sd<- nat_mean*0.2
+nat_data<- data.frame(value= rnorm(1000, nat_mean, nat_sd))
+
+pre_value<- results %>%
+  filter(variable== "M0") 
+pre_mean<- pre_value$value
+pre_sd<- pre_mean*0.2
+pre_data<- data.frame(value= rnorm(1000, pre_mean, pre_sd))
+```
+
+
+```{r data_frame}
+data<- bind_cols(pre_data, nat_data)
+
+```
+
+```{r function_mod}
+param<- function(core, parameter, value) {
+  old_value <- fetchvars(core, NA, parameter)
+  unit <- as.character(old_value[["units"]])
+  setvar(core, NA, parameter, value, unit)
+  reset(core)
+  run(core)
+  result <- fetchvars(core, 2000:2100)
+  result[["parameter_value"]] <- value
+  result
+}
+
+run_with_param_range <- function(core, parameter, values) {
+  mapped <- Map(function(x) param(core, parameter, x), values)
+  Reduce(rbind, mapped)
+}
+```
+
 
