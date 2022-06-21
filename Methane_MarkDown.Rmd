@@ -202,17 +202,22 @@ pre_sd<- pre_mean*0.2
 pre_data<- data.frame(value= rnorm(1000, pre_mean, pre_sd))
 ```
 
+Combining data frames
 
 ```{r data_frame}
 data<- bind_cols(pre_data, nat_data)
 
 ```
 
+Altering function to have multiple parameters
+
 ```{r function_mod}
-param<- function(core, parameter, value) {
-  old_value <- fetchvars(core, NA, parameter)
-  unit <- as.character(old_value[["units"]])
-  setvar(core, NA, parameter, value, unit)
+multi_param<- function(core, parameter_1, value_1, parameter_2, value_2) {
+  old_value <- fetchvars(core, NA, parameter_1)
+  old_value2 <- fetchvars(core, NA, parameter_2)
+  unit <- as.character(old_value[["units"]], old_value2[["units2"]])
+  setvar(core, NA, parameter_1, value_1, unit_1)
+  setvar(core, NA, parameter_2, value_2, unit_2)
   reset(core)
   run(core)
   result <- fetchvars(core, 2000:2100)
@@ -220,10 +225,33 @@ param<- function(core, parameter, value) {
   result
 }
 
-run_with_param_range <- function(core, parameter, values) {
-  mapped <- Map(function(x) param(core, parameter, x), values)
-  Reduce(rbind, mapped)
+run_with_multi_param_range <- function(core, parameter_1, values_1, parameter_2, values_2) {
+  mapped_1 <- Map(function(x) multi_param(core, parameter_1, x), values_1)
+  Reduce(rbind, mapped1)
+  mapped_2 <- Map(function(x) multi_param(core, parameter_2, x), values_2)
+  Reduce(rbind, mapped2)
 }
 ```
 
+Setting sequences and running function
+
+```{r}
+valuen<- data %>%
+  select(value...2)
+allnat<- valuen$value...2
+meann<- mean(allnat)
+nat_low <- meann * (1 - 0.2)
+nat_high <- meann * (1 + 0.2)
+nat_seq <- seq(nat_low, nat_high, 5)
+
+valuep<- data %>%
+  select(value...1)
+allpre<- valuep$value...1
+meanp<- mean(allpre)
+pre_low <- meanp * (1 - 0.2)
+pre_high <- meanp * (1 + 0.2)
+pre_seq <- seq(pre_low, pre_high, 5)
+
+sensitivity_emission <- run_with_multi_param_range(core, NATURAL_CH4(), nat_seq, PREINDUSTRIAL_CH4(), pre_seq)
+```
 
