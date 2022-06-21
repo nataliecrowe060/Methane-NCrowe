@@ -178,7 +178,7 @@ invisible(shutdown(core))
 
 ## Multiple Parameter Run
 
-Working with two parameters `NATURAL_CH4` and `PREINDUSTRIAL_CH4`
+Working with two parameters `NATURAL_CH4` and `PREINDUSTRIAL_CH4` to create a sensitivity analysis. First we use `fetchvars` for both.
 
 ```{r core}
 core <- newcore(ini_file)
@@ -186,7 +186,7 @@ run(core)
 results <- fetchvars(core, NA, c(NATURAL_CH4(), PREINDUSTRIAL_CH4()))
 ```
 
-Normal Distribution
+We then create two data frames- one for each parameter. First isolating the variable, and then calculating mean and standard deviation for the variable's value. The using `rnorm` we create 1000 values pulled from the normal distribution, putting our results in `data.frame`.
 
 ```{r rnorm}
 nat_value<- results %>%
@@ -202,26 +202,28 @@ pre_sd<- pre_mean*0.2
 pre_data<- data.frame(value= rnorm(1000, pre_mean, pre_sd))
 ```
 
-Combining data frames
+Combining the data frames with `bind.cols`.
 
 ```{r data_frame}
 data<- bind_cols(pre_data, nat_data)
 
 ```
 
-Altering function to have multiple parameters
+Using the function we created in the previous sensitivity analysis as a base, we can add `parameter` and `value` 1 and 2 to the input. We then replicate this doubiling throuout the function. 
 
 ```{r function_mod}
 multi_param<- function(core, parameter_1, value_1, parameter_2, value_2) {
   old_value <- fetchvars(core, NA, parameter_1)
   old_value2 <- fetchvars(core, NA, parameter_2)
-  unit <- as.character(old_value[["units"]], old_value2[["units2"]])
+  unit_1 <- as.character(old_value[["units"]])
+  unit_2 <- as.character(old_value[["units"]])
   setvar(core, NA, parameter_1, value_1, unit_1)
   setvar(core, NA, parameter_2, value_2, unit_2)
   reset(core)
   run(core)
   result <- fetchvars(core, 2000:2100)
-  result[["parameter_value"]] <- value
+  result[["parameter_1_value"]] <- value_1
+  result[["parameter_2_value"]] <- value_2
   result
 }
 
@@ -233,12 +235,11 @@ run_with_multi_param_range <- function(core, parameter_1, values_1, parameter_2,
 }
 ```
 
-Setting sequences and running function
+Before running our function, we create sequences for both `NATURAL_CH4` and `PREINDUSTRIAL_CH4` with standard deviations of +/-20%. We can then incorporate these sequences and parameters into the function.
 
 ```{r}
 seq_function<- function(data, column) {
-  value<- data %>%
-    select(column)
+  value<- data[column]
   alldata<- value$column
   mean<- mean(alldata)
   low<- mean * (1-0.2)
@@ -263,6 +264,6 @@ pre_low <- meanp * (1 - 0.2)
 pre_high <- meanp * (1 + 0.2)
 pre_seq <- seq(pre_low, pre_high, 5)
 
-sensitivity_emission <- run_with_multi_param_range(core, NATURAL_CH4(), nat_seq, PREINDUSTRIAL_CH4(), pre_seq)
+sensitivity_multi <- run_with_multi_param_range(core, NATURAL_CH4(), nat_seq, PREINDUSTRIAL_CH4(), pre_seq)
 ```
 
