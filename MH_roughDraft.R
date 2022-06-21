@@ -35,3 +35,8 @@ data<- data.frame(value= rnorm(1000, 166.1228, 136.1127))
 ggplot(data, aes(x=value))+
   geom_histogram(binwidth = 1)+
   labs( x= "Emission Level", y= "count per year", main= "C02 Emissions By Year")
+<<<<<<< Updated upstream
+=======
+
+
+>>>>>>> Stashed changes

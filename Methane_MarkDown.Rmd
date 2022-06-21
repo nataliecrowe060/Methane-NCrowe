@@ -131,7 +131,7 @@ param<- function(core, parameter, value) {
 }
 ```
 
-Then we tell hector to run a range of values. In this case we ask for 20% above and bellow the set value of `NATURAL_CH4`(341Tg) at intervals of 5. These set values are labled as `ch4-seq`.
+Then we tell hector to run a range of values. In this case we ask for 20% above and bellow the set value of `NATURAL_CH4`(341Tg) at intervals of 5 +/-20%. These set values are labelled as `ch4-seq`.
 
 ```{r sen-param}
 run_with_param_range <- function(core, parameter, values) {
@@ -140,8 +140,9 @@ run_with_param_range <- function(core, parameter, values) {
 }
 x<- default %>%
   select(value)
-ch4_low <- x * (1 - 0.2)
-ch4_high <- x * (1 + 0.2)
+y<- x$value
+ch4_low <- y * (1 - 0.2)
+ch4_high <- y * (1 + 0.2)
 ch4_seq <- seq(ch4_low, ch4_high, 5)
 sensitivity_emission <- run_with_param_range(core, NATURAL_CH4(), ch4_seq)
 ```
@@ -162,7 +163,8 @@ ggplot(sensitivity_emission) +
 Using the same `Natural_CH4` data, we can also make a histogram plot. Since we already made `ch4_low` and `ch4_high` with levels +/-20%, we can re-purpose them for this graph.
 
 ```{r}
-data<- data.frame(value= rnorm(1000, ch4_low, ch4_high))
+z<- y*0.2
+data<- data.frame(value= rnorm(1000, y, z))
 ```
 
 Then we can use `ggplot2` to create a histogram with the randomized values.
@@ -172,3 +174,4 @@ ggplot(data, aes(x=value))+
   labs( x= "Natural CH4 Level", y= "count", main= "Natural CH4 Histogram")
 invisible(shutdown(core))
 ```
+
