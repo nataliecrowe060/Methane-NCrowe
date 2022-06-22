@@ -193,77 +193,61 @@ nat_value<- results %>%
   filter(variable== "CH4N") 
 nat_mean<- nat_value$value
 nat_sd<- nat_mean*0.2
-nat_data<- data.frame(value= rnorm(1000, nat_mean, nat_sd))
+nat_data<- data.frame(value= rnorm(10, nat_mean, nat_sd))
 
 pre_value<- results %>%
   filter(variable== "M0") 
 pre_mean<- pre_value$value
 pre_sd<- pre_mean*0.2
-pre_data<- data.frame(value= rnorm(1000, pre_mean, pre_sd))
+pre_data<- data.frame(value= rnorm(10, pre_mean, pre_sd))
 ```
 
-Combining the data frames with `bind.cols`.
+Combining the data frames with `bind.cols` and renaming the columns.
 
 ```{r data_frame}
-data<- bind_cols(pre_data, nat_data)
-
+data<- bind_cols(pre_data, nat_data) %>%
+  as_tibble()
+colnames(data)<- c("PREINDUSTRIAL_CH4", "NATURAL_CH4")
 ```
 
-Using the function we created in the previous sensitivity analysis as a base, we can add `parameter` and `value` 1 and 2 to the input. We then replicate this doubiling throuout the function. 
+Using a `for` loop function, we can run both parameters of the data frame- read as different columns by our code. 
 
 ```{r function_mod}
-multi_param<- function(core, parameter_1, value_1, parameter_2, value_2) {
-  old_value <- fetchvars(core, NA, parameter_1)
-  old_value2 <- fetchvars(core, NA, parameter_2)
-  unit_1 <- as.character(old_value[["units"]])
-  unit_2 <- as.character(old_value[["units"]])
-  setvar(core, NA, parameter_1, value_1, unit_1)
-  setvar(core, NA, parameter_2, value_2, unit_2)
-  reset(core)
-  run(core)
-  result <- fetchvars(core, 2000:2100)
-  result[["parameter_1_value"]] <- value_1
-  result[["parameter_2_value"]] <- value_2
+multi_param<- function(core, pdata){
+  for(p in colnames(pdata)) {
+    var<- do.call(p, list())
+    old_value<- fetchvars(core, NA, var)
+    unit<- as.character(old_value[["units"]])
+    setvar(core, NA, var, pdata[p][[1]], unit)
+    reset(core)
+    run(core)
+    result<- fetchvars(core, 2000:2100)
+    result[[p]]<- pdata[p][[1]]
+  }
   result
-}
-
-run_with_multi_param_range <- function(core, parameter_1, values_1, parameter_2, values_2) {
-  mapped_1 <- Map(function(x) multi_param(core, parameter_1, x), values_1)
-  Reduce(rbind, mapped1)
-  mapped_2 <- Map(function(x) multi_param(core, parameter_2, x), values_2)
-  Reduce(rbind, mapped2)
 }
 ```
 
-Before running our function, we create sequences for both `NATURAL_CH4` and `PREINDUSTRIAL_CH4` with standard deviations of +/-20%. We can then incorporate these sequences and parameters into the function.
+To run our values through this new function, we create another `for ` loop to put in each row of data one by one. Then with `bind_rows` we can use these created values to form a data frame.
 
-```{r}
-seq_function<- function(data, column) {
-  value<- data[column]
-  alldata<- value$column
-  mean<- mean(alldata)
-  low<- mean * (1-0.2)
-  high<- mean * (1+0.2)
-  sequence<- seq(low, high, 5)
+```{r output}
+output<- list()
+for(rownum in 1:nrow(data)){
+  output[[rownum]]<- multi_param(core, data[rownum,])
 }
-seq_function(data, value...2)
 
-valuen<- data %>%
-  select(value...2)
-allnat<- valuen$value...2
-meann<- mean(allnat)
-nat_low <- meann * (1 - 0.2)
-nat_high <- meann * (1 + 0.2)
-nat_seq <- seq(nat_low, nat_high, 5)
+output_data<- output %>% bind_rows()
+```
 
-valuep<- data %>%
-  select(value...1)
-allpre<- valuep$value...1
-meanp<- mean(allpre)
-pre_low <- meanp * (1 - 0.2)
-pre_high <- meanp * (1 + 0.2)
-pre_seq <- seq(pre_low, pre_high, 5)
+Similar to the graph in our first sensitivity analysis, we can form a graph using the `output_data` made in the last step. 
 
-sensitivity_multi <- run_with_multi_param_range(core, NATURAL_CH4(), nat_seq, PREINDUSTRIAL_CH4(), pre_seq)
+```{r graph}
+ggplot(output_data) +
+  aes(x = year, y = value, group = NATURAL_CH4, color= NATURAL_CH4) +
+  geom_line() +
+  facet_wrap(~variable, scales = "free_y") +
+  labs(color = "NATURAL CH4 (Tg)") +
+  scale_color_viridis_c()
+shutdown(core)
 ```
 
