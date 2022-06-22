@@ -183,7 +183,7 @@ Working with two parameters `NATURAL_CH4` and `PREINDUSTRIAL_CH4` to create a se
 ```{r core}
 core <- newcore(ini_file)
 run(core)
-results <- fetchvars(core, NA, c(NATURAL_CH4(), PREINDUSTRIAL_CH4()))
+results <- fetchvars(core, NA, c(NATURAL_CH4(), PREINDUSTRIAL_CH4(),LIFETIME_SOIL(), LIFETIME_STRAT()))
 ```
 
 We then create two data frames- one for each parameter. First isolating the variable, and then calculating mean and standard deviation for the variable's value. The using `rnorm` we create 1000 values pulled from the normal distribution, putting our results in `data.frame`.
@@ -200,14 +200,29 @@ pre_value<- results %>%
 pre_mean<- pre_value$value
 pre_sd<- pre_mean*0.2
 pre_data<- data.frame(value= rnorm(10, pre_mean, pre_sd))
+
+soil_value<- results %>%
+  filter(variable== "Tsoil") 
+soil_mean<- soil_value$value
+soil_sd<- soil_mean*0.2
+soil_data<- data.frame(value= rnorm(10, soil_mean, soil_sd))
+
+strat_value<- results %>%
+  filter(variable== "Tstrat") 
+strat_mean<- strat_value$value
+strat_sd<- strat_mean*0.2
+strat_data<- data.frame(value= rnorm(10, strat_mean, strat_sd))
 ```
 
 Combining the data frames with `bind.cols` and renaming the columns.
 
 ```{r data_frame}
-data<- bind_cols(pre_data, nat_data) %>%
+data<- bind_cols(pre_data, nat_data, soil_data, strat_data) %>%
   as_tibble()
-colnames(data)<- c("PREINDUSTRIAL_CH4", "NATURAL_CH4")
+rows<- seq(nrow(data))
+data<- data %>%
+  mutate(new_col= rows)
+colnames(data)<- c("PREINDUSTRIAL_CH4", "NATURAL_CH4", "LIFETIME_SOIL", "LIFETIME_STRAT", "run_number")
 ```
 
 Using a `for` loop function, we can run both parameters of the data frame- read as different columns by our code. 
@@ -222,7 +237,7 @@ multi_param<- function(core, pdata){
     reset(core)
     run(core)
     result<- fetchvars(core, 2000:2100)
-    result[[p]]<- pdata[p][[1]]
+    result[[run_number]] <- pdata[p][[1]]
   }
   result
 }
