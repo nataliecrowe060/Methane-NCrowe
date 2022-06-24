@@ -22,6 +22,7 @@ Our first step is to create a core. Hector will use this to pull data from exist
 library(hector)
 library(ggplot2)
 library(dplyr)
+library(tidyr)
 ini_file <- system.file("input/hector_ssp245.ini", package = "hector")
 core <- newcore(ini_file)
 run(core)
@@ -228,9 +229,9 @@ colnames(data)<- c("PREINDUSTRIAL_CH4", "NATURAL_CH4", "LIFETIME_SOIL", "LIFETIM
 Using a `for` loop function, we can run both parameters of the data frame- read as different columns by our code. 
 
 ```{r function_mod}
-multi_param<- function(core, pdata){#create input for function
+multi_param<- function(core, pdata){ #create input for function
   for(p in colnames(pdata)) { 
-    var<- do.call(p, list())m #create vector for row running
+    var<- do.call(p, list()) #create vector for row running
     old_value<- fetchvars(core, NA, var) #old variable called to be changed
     unit<- as.character(old_value[["units"]]) 
     setvar(core, NA, var, pdata[p][[1]], unit) #set row vars from old to new values
@@ -255,15 +256,17 @@ output_data<- output %>% bind_rows() #create a data frame with output
 full_data<- left_join(output_data, data, by= "run_number") #add in param values columns to results of loop df by pairing with row_number column
 ```
 
-Similar to the graph in our first sensitivity analysis, we can form a graph using the `output_data` made in the last step. 
+Graphs
 
-```{r graph}
-ggplot(output_data) +
-  aes(x = year, y = value, group = NATURAL_CH4, color= NATURAL_CH4) +
-  geom_line() +
-  facet_wrap(~variable, scales = "free_y") +
-  labs(color = "NATURAL CH4 (Tg)") +
-  scale_color_viridis_c()
-shutdown(core)
+```{r piv-long-data}
+long_fdata<- full_data %>%
+  pivot_longer(!c(scenario, year, variable, value, units, run_number), names_to= "parameter", values_to= "param_value")
 ```
+
+```{r}
+long_fdata %>%
+  ggplot(aes(x= param_value, fill= parameter))+
+  geom_histogram(binwidth= 5)
+```
+
 
