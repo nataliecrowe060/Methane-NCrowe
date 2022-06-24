@@ -228,16 +228,16 @@ colnames(data)<- c("PREINDUSTRIAL_CH4", "NATURAL_CH4", "LIFETIME_SOIL", "LIFETIM
 Using a `for` loop function, we can run both parameters of the data frame- read as different columns by our code. 
 
 ```{r function_mod}
-multi_param<- function(core, pdata){#create input for function
-  for(p in colnames(pdata)) { 
-    var<- do.call(p, list())m #create vector for row running
-    old_value<- fetchvars(core, NA, var) #old variable called to be changed
-    unit<- as.character(old_value[["units"]]) 
-    setvar(core, NA, var, pdata[p][[1]], unit) #set row vars from old to new values
-    reset(core) #reset core to run new values
-    run(core) #run new params
-    result<- fetchvars(core, 2000:2100) #results for x years
+multi_param <- function(core, pdata){ # create input for function
+  for(p in colnames(pdata)) { # for each column name (parameter)...
+    var<- do.call(p, list()) # create vector for row running; convert each column name (each parameter) to a function so that setvar() recognizes it
+    old_value<- fetchvars(core, NA, var) # old variable called to access units to be used in setvar()
+    unit<- as.character(old_value[["units"]]) # access units
+    setvar(core, NA, var, pdata[p][[1]], unit) # set row vars from old to new values; note that pdata[p][[1]] accesses just the values in the p (parameter) column
+    reset(core) # reset core to run new values
   }
+  run(core) # run core with all new param values
+  result<- fetchvars(core, 2000:2100) # results for x years
   result
 }
 ```
@@ -246,13 +246,23 @@ To run our values through this new function, we create another `for ` loop to pu
 
 ```{r output}
 output<- list() #make an empty list
-for(rownum in 1:nrow(data)){ #loop starting with 1st row of data going from 1-end of data
-  output[[rownum]]<- multi_param(core, data[rownum,][-5]) #output as a row for inputs of all columns in row running(1-end data) besides 5th
-  output[[rownum]]$run_number<- data$run_number[[rownum]] #now that row has finished without 5th row, put 5th row back in as guide for next row run
+# loop starting with 1st row of data going from 1-end of data
+for(rownum in 1:nrow(data)){ 
+  # output as a row for inputs of all columns in row running(1-end data)
+  # besides 5th ; assign the results of running the multi_param() function 
+  # using our runlist to the output list. We don't use the 5th column 
+  # (run_number) in the function, but rather as an identifier for each entry 
+  # in the output list.
+  output[[rownum]]<- multi_param(core, data[rownum,][-5])
+  
+  # now that row has finished without 5th row, put 5th row back in as guide 
+  # for next row run ; note that output[[x]] accesses the xth element of the 
+  # list, a data frame, and $run_number applies to that data frame. 
+  output[[rownum]]$run_number<- data$run_number[[rownum]] 
 }
 
 output_data<- output %>% bind_rows() #create a data frame with output
-full_data<- left_join(output_data, data, by= "run_number") #add in param values columns to results of loop df by pairing with row_number column
+full_data<- left_join(output_data, data, by= "run_number") #add in param values columns to results of loop df by pairing with run_number column
 ```
 
 Similar to the graph in our first sensitivity analysis, we can form a graph using the `output_data` made in the last step. 
