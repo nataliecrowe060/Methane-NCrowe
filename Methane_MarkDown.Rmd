@@ -256,17 +256,44 @@ output_data<- output %>% bind_rows() #create a data frame with output
 full_data<- left_join(output_data, data, by= "run_number") #add in param values columns to results of loop df by pairing with row_number column
 ```
 
-Graphs
+### Graphing multiple parameters
+
+Now that we've created multi-parameter data, we can visualize our results. Using the `pivot_longer` function from `tidyr` we first group our parameters into two columns: `parameter` and `param_value`. This will make graphing much easier, since we are now only working with one variable type.
 
 ```{r piv-long-data}
 long_fdata<- full_data %>%
   pivot_longer(!c(scenario, year, variable, value, units, run_number), names_to= "parameter", values_to= "param_value")
 ```
 
-```{r}
+To visualize the spread of our new values we can create a histogram. Filling each parameter with a different color allows us to incorporate all information on one graph. 
+
+```{r long-hist}
 long_fdata %>%
   ggplot(aes(x= param_value, fill= parameter))+
-  geom_histogram(binwidth= 5)
+  geom_histogram(alpha= 0.6, binwidth= 7)
+```
+To show the differences in values between each run, we can create a bar chart grouping parameter by `run_number`. Although the values for each run stay consistent, we must use the `summarise` and `mean` functions to condence our data frame into single values before graphing. 
+
+```{r bar_params}
+mean_fdata<- full_data %>%
+  group_by(run_number) %>%
+  summarise(meanNatM_TgCH4= mean(NATURAL_CH4), meanPreM_ppbvCH4= mean(PREINDUSTRIAL_CH4), meanSoilM_Years= mean(LIFETIME_SOIL), meanStratM_Years= mean(LIFETIME_STRAT))
+
+long_mdata<- mean_fdata %>%
+  pivot_longer(!run_number, names_to= "parameter", values_to= "param_value")
+
+ggplot(long_mdata, aes(y= param_value, x= run_number , fill= parameter )) +
+  geom_bar(stat="identity",
+           position= position_dodge())
 ```
 
+
+
+```{r multi_sensitivity}
+ggplot(full_data, aes(y= value, x=  year, color= run_number, group = run_number)) +
+  geom_line() +
+  facet_wrap(~variable, scales = "free_y")+
+  scale_color_viridis_c() 
+shutdown(core)
+```
 
