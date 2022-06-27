@@ -288,7 +288,7 @@ ggplot(long_mdata, aes(y= param_value, x= run_number , fill= parameter )) +
            position= position_dodge())
 ```
 
-
+We can also create a line graph for our output values. This is the same as the sensitivity analysis graph earlier on, only now with more input parameters. This graph isn't ideal if we are looping more than a handful of times...
 
 ```{r multi_sensitivity}
 ggplot(full_data, aes(y= value, x=  year, color= run_number, group = run_number)) +
@@ -298,6 +298,7 @@ ggplot(full_data, aes(y= value, x=  year, color= run_number, group = run_number)
 #shutdown(core)
 ```
 
+... A better graph for our runs is `geom_line`, which graphs the mean of our outputs each year, as well as the maximum and minimum values. First we find the mean, standard deviation, minimum and maximum using `summarize` - then we can plot the results.
 
 ```{r summary-graph}
 
