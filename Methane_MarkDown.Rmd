@@ -163,7 +163,7 @@ ggplot(sensitivity_emission) +
 
 Using the same `Natural_CH4` data, we can also make a histogram plot. Since we already made `ch4_low` and `ch4_high` with levels +/-20%, we can re-purpose them for this graph.
 
-```{r rnorm}
+```{r rnorm1}
 sdn<- meann*0.2
 data<- data.frame(value= rnorm(1000, meann, sdn))
 ```
@@ -179,7 +179,7 @@ invisible(shutdown(core))
 
 ## Multiple Parameter Run
 
-Working with two parameters `NATURAL_CH4` and `PREINDUSTRIAL_CH4` to create a sensitivity analysis. First we use `fetchvars` for both.
+Working with four parameters `NATURAL_CH4`, `PREINDUSTRIAL_CH4`, `LIFETIME_SOIL` and `LIFETIME_STRAT` to create a sensitivity analysis. First we run all of them through `fetchvars`.
 
 ```{r core}
 core <- newcore(ini_file)
@@ -187,9 +187,9 @@ run(core)
 results <- fetchvars(core, NA, c(NATURAL_CH4(), PREINDUSTRIAL_CH4(),LIFETIME_SOIL(), LIFETIME_STRAT()))
 ```
 
-We then create two data frames- one for each parameter. First isolating the variable, and then calculating mean and standard deviation for the variable's value. The using `rnorm` we create 1000 values pulled from the normal distribution, putting our results in `data.frame`.
+We then create two data frames- one for each parameter. First isolating the variable, and then calculating mean and standard deviation for the variable's value. The using `rnorm` we create 10 values pulled from the normal distribution, putting our results in `data.frame`.
 
-```{r rnorm}
+```{r rnorm2}
 nat_value<- results %>%
   filter(variable== "CH4N") 
 nat_mean<- nat_value$value
@@ -265,7 +265,7 @@ long_fdata<- full_data %>%
   pivot_longer(!c(scenario, year, variable, value, units, run_number), names_to= "parameter", values_to= "param_value")
 ```
 
-To visualize the spread of our new values we can create a histogram. Filling each parameter with a different color allows us to incorporate all information on one graph. 
+To visualize the spread of our new values we can create a histogram broken into four windows with `facet_wrap`.
 
 ```{r long-hist}
 long_fdata %>%
@@ -273,7 +273,7 @@ long_fdata %>%
   geom_histogram(alpha= 0.6, binwidth= 7)  +
    facet_wrap(~parameter, scales = "free_y")
 ```
-To show the differences in values between each run, we can create a bar chart grouping parameter by `run_number`. Although the values for each run stay consistent, we must use the `summarise` and `mean` functions to condence our data frame into single values before graphing. 
+To show the differences in values between each run, we can create a bar chart grouping parameter by `run_number`. Although the values for each run stay consistent, we must use the `summarise` and `mean` functions to condense our data frame into single values before graphing. 
 
 ```{r bar_params}
 mean_fdata<- full_data %>%
@@ -304,11 +304,11 @@ ggplot(full_data, aes(y= value, x=  year, color= run_number, group = run_number)
 
 sum_data<-  long_fdata%>%
   group_by(variable, year) %>%
-  summarize(Mean= mean(value), SD= sd(value), Minval= min(value), Maxval= max(value))
+  summarize(Mean_val= mean(value), SD_val= sd(value), Min_val= min(value), Max_val= max(value))
 
 ggplot(sum_data, aes(year)) +
-   geom_ribbon(aes(ymin= Minval, ymax= Maxval), fill= "pink") +
-  geom_line(aes(y= Mean, color= variable), size= 0.5) +
+   geom_ribbon(aes(ymin= Minval_val, ymax= Maxval_val), fill= "pink") +
+  geom_line(aes(y= Mean_val, color= variable), size= 0.5) +
   facet_wrap(~variable, scales = "free_y")
 shutdown(core)
 
