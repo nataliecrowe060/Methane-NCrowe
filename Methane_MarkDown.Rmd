@@ -270,7 +270,8 @@ To visualize the spread of our new values we can create a histogram. Filling eac
 ```{r long-hist}
 long_fdata %>%
   ggplot(aes(x= param_value, fill= parameter))+
-  geom_histogram(alpha= 0.6, binwidth= 7)
+  geom_histogram(alpha= 0.6, binwidth= 7)  +
+   facet_wrap(~parameter, scales = "free_y")
 ```
 To show the differences in values between each run, we can create a bar chart grouping parameter by `run_number`. Although the values for each run stay consistent, we must use the `summarise` and `mean` functions to condence our data frame into single values before graphing. 
 
@@ -294,6 +295,20 @@ ggplot(full_data, aes(y= value, x=  year, color= run_number, group = run_number)
   geom_line() +
   facet_wrap(~variable, scales = "free_y")+
   scale_color_viridis_c() 
-shutdown(core)
+#shutdown(core)
 ```
 
+
+```{r summary-graph}
+
+sum_data<-  long_fdata%>%
+  group_by(variable, year) %>%
+  summarize(Mean= mean(value), SD= sd(value), Minval= min(value), Maxval= max(value))
+
+ggplot(sum_data, aes(year)) +
+   geom_ribbon(aes(ymin= Minval, ymax= Maxval), fill= "pink") +
+  geom_line(aes(y= Mean, color= variable), size= 0.5) +
+  facet_wrap(~variable, scales = "free_y")
+shutdown(core)
+
+```
