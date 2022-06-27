@@ -307,9 +307,9 @@ sum_data<-  long_fdata%>%
   summarize(Mean_val= mean(value), SD_val= sd(value), Min_val= min(value), Max_val= max(value))
 
 ggplot(sum_data, aes(year)) +
-   geom_ribbon(aes(ymin= Minval_val, ymax= Maxval_val), fill= "pink") +
+   geom_ribbon(aes(ymin= Min_val, ymax= Max_val), fill= "pink") +
   geom_line(aes(y= Mean_val, color= variable), size= 0.5) +
   facet_wrap(~variable, scales = "free_y")
-shutdown(core)
+#shutdown(core)
 
 ```
