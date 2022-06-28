@@ -31,7 +31,7 @@ run(core)
 ## Methane Emissions Data and Graph
 
 After creating and running the core we query it for methane-related outputs
-between the years of 1745 and 2100. Hector has several options that relate to methane, including emissions, concentration, postindustrial, natural, soil lifetime and stratosphere lifetime.
+between the years of 1745 and 2100. Hector has several options that relate to methane, including emissions, concentration, postindustrial, natural, soil lifetime and stratosphere lifetime. In this case we ask for `EMISSIONS_CH4` and `CONCENTRATIONS_CH4`, which will both have a value for every year we ask for (1745-2100).
 
 ```{r Emissions-data-frame}
 results<- fetchvars(core, 1745:2100, c(EMISSIONS_CH4(), CONCENTRATIONS_CH4()))
@@ -76,7 +76,7 @@ noaa_data <- noaa %>%
 
 ```
 
-We then tell hector we want to look at CH4 concentration in the years corisponding to the NOAA data.
+We then tell hector we want to look at CH4 concentration in the years corresponding to the NOAA data.
 
 ```{r hector-data}
 hector_data <- results %>%
@@ -91,9 +91,10 @@ We can then plot for the hector and NOAA data at once.
 ```{r NOAA-plot}
 ggplot() +
   geom_line(data = noaa_data, aes(x = year, y = mean, color = "NOAA")) +
-  geom_line(data = hector_data, aes(x = year, y = mean, color = "Hector")) +
+  geom_line(data = hector_data, aes(x = year, y = mean, color = "SSP245 (Hector)")) +
   labs(x = "Year", 
        y = "ppb",
+       title= "Methane Concentration 1984-2021 in SSP245 and NOAA",
        color = "Source")
 ```
 
@@ -101,6 +102,7 @@ ggplot() +
 ## Comparison Plots
 
 We can put these two results into a single graph...
+
 ```{r Comparison-graph}
 ggplot(data= results, aes(x= year, y= value, color= units))+
     geom_line()+
@@ -116,7 +118,7 @@ ggplot(data= results, aes(x= year, y= value, color= units))+
 To examine SSP245's Natural methane  sensitivity we first ask hector to fetch data for the `NATURAL_CH4` constant. We then create a function to run this parameter set to a particular value. 
 
 ```{r call-for-param}
-core <- newcore(ini_file)
+reset(core)
 run(core)
 default<- fetchvars(core, NA, NATURAL_CH4())
 
@@ -154,7 +156,7 @@ Once we have our differing model outputs we can create a graph. Using the graph 
 ggplot(sensitivity_emission) +
   aes(x = year, y = value, color = parameter_value, group = parameter_value) +
   geom_line() +
-  facet_wrap(~variable, scales = "free_y") +
+  facet_wrap(~variable, scales = "free") +
   labs(color = "NATURAL CH4 (Tg)") +
   scale_color_viridis_c() 
 ```
@@ -171,9 +173,8 @@ data<- data.frame(value= rnorm(1000, meann, sdn))
 Then we can use `ggplot2` to create a histogram with the randomized values.
 ```{r hist}
 ggplot(data, aes(x=value))+
-  geom_histogram(binwidth = 1)+
+  geom_histogram(binwidth = 10)+
   labs( x= "Natural CH4 Level", y= "count", main= "Natural CH4 Histogram")
-invisible(shutdown(core))
 ```
 
 
@@ -182,7 +183,7 @@ invisible(shutdown(core))
 Working with four parameters `NATURAL_CH4`, `PREINDUSTRIAL_CH4`, `LIFETIME_SOIL` and `LIFETIME_STRAT` to create a sensitivity analysis. First we run all of them through `fetchvars`.
 
 ```{r core}
-core <- newcore(ini_file)
+reset(core)
 run(core)
 results <- fetchvars(core, NA, c(NATURAL_CH4(), PREINDUSTRIAL_CH4(),LIFETIME_SOIL(), LIFETIME_STRAT()))
 ```
@@ -190,29 +191,31 @@ results <- fetchvars(core, NA, c(NATURAL_CH4(), PREINDUSTRIAL_CH4(),LIFETIME_SOI
 We then create two data frames- one for each parameter. First isolating the variable, and then calculating mean and standard deviation for the variable's value. The using `rnorm` we create 10 values pulled from the normal distribution, putting our results in `data.frame`.
 
 ```{r rnorm2}
+N_RUNS<- 10
+
 nat_value<- results %>%
   filter(variable== "CH4N") 
 nat_mean<- nat_value$value
 nat_sd<- nat_mean*0.2
-nat_data<- data.frame(value= rnorm(10, nat_mean, nat_sd))
+nat_data<- data.frame(value= rnorm(N_RUNS, nat_mean, nat_sd))
 
 pre_value<- results %>%
   filter(variable== "M0") 
 pre_mean<- pre_value$value
 pre_sd<- pre_mean*0.2
-pre_data<- data.frame(value= rnorm(10, pre_mean, pre_sd))
+pre_data<- data.frame(value= rnorm(N_RUNS, pre_mean, pre_sd))
 
 soil_value<- results %>%
   filter(variable== "Tsoil") 
 soil_mean<- soil_value$value
 soil_sd<- soil_mean*0.2
-soil_data<- data.frame(value= rnorm(10, soil_mean, soil_sd))
+soil_data<- data.frame(value= rnorm(N_RUNS, soil_mean, soil_sd))
 
 strat_value<- results %>%
   filter(variable== "Tstrat") 
 strat_mean<- strat_value$value
 strat_sd<- strat_mean*0.2
-strat_data<- data.frame(value= rnorm(10, strat_mean, strat_sd))
+strat_data<- data.frame(value= rnorm(N_RUNS, strat_mean, strat_sd))
 ```
 
 Combining the data frames with `bind.cols` and renaming the columns.
@@ -226,7 +229,7 @@ data<- data %>%
 colnames(data)<- c("PREINDUSTRIAL_CH4", "NATURAL_CH4", "LIFETIME_SOIL", "LIFETIME_STRAT", "run_number")
 ```
 
-Using a `for` loop function, we can run both parameters of the data frame- read as different columns by our code. 
+Using a `for` loop function, we can run a line of our parameter data through the code we want- made into a `function`. 
 
 ```{r function_mod}
 multi_param<- function(core, pdata){ #create input for function
@@ -271,14 +274,14 @@ To visualize the spread of our new values we can create a histogram broken into 
 long_fdata %>%
   ggplot(aes(x= param_value, fill= parameter))+
   geom_histogram(alpha= 0.6, binwidth= 7)  +
-   facet_wrap(~parameter, scales = "free_y")
+   facet_wrap(~parameter, scales = "free")
 ```
 To show the differences in values between each run, we can create a bar chart grouping parameter by `run_number`. Although the values for each run stay consistent, we must use the `summarise` and `mean` functions to condense our data frame into single values before graphing. 
 
 ```{r bar_params}
 mean_fdata<- full_data %>%
   group_by(run_number) %>%
-  summarise(meanNatM_TgCH4= mean(NATURAL_CH4), meanPreM_ppbvCH4= mean(PREINDUSTRIAL_CH4), meanSoilM_Years= mean(LIFETIME_SOIL), meanStratM_Years= mean(LIFETIME_STRAT))
+  summarise("Mean of natural emmissions(TgCH4)" = mean(NATURAL_CH4), "Mean of preindustrial levels(ppbvCH4)" = mean(PREINDUSTRIAL_CH4), "Mean lifetime in soil(years)"= mean(LIFETIME_SOIL), "Mean lifetime in stratosphere(years)"= mean(LIFETIME_STRAT))
 
 long_mdata<- mean_fdata %>%
   pivot_longer(!run_number, names_to= "parameter", values_to= "param_value")
@@ -298,7 +301,7 @@ ggplot(full_data, aes(y= value, x=  year, color= run_number, group = run_number)
 #shutdown(core)
 ```
 
-... A better graph for our runs is `geom_line`, which graphs the mean of our outputs each year, as well as the maximum and minimum values. First we find the mean, standard deviation, minimum and maximum using `summarize` - then we can plot the results.
+... A better graph for our runs is `geom_ribbon`, which graphs the mean of our outputs each year, as well as the maximum and minimum values. First we find the mean, standard deviation, minimum and maximum using `summarize` - then we can plot the results.
 
 ```{r summary-graph}
 
@@ -307,9 +310,32 @@ sum_data<-  long_fdata%>%
   summarize(Mean_val= mean(value), SD_val= sd(value), Min_val= min(value), Max_val= max(value))
 
 ggplot(sum_data, aes(year)) +
-   geom_ribbon(aes(ymin= Min_val, ymax= Max_val), fill= "pink") +
+   geom_ribbon(aes(ymin= Min_val, ymax= Max_val, fill= variable), alpha= 0.3) +
   geom_line(aes(y= Mean_val, color= variable), size= 0.5) +
   facet_wrap(~variable, scales = "free_y")
-#shutdown(core)
 
 ```
+
+
+```{r experimenting}
+
+expmulti_data<-  long_fdata%>%
+  group_by(variable, year) %>%
+  summarize(Mean_multi= mean(value), SD_multi= sd(value), Min_multi= min(value), Max_multi= max(value))
+
+expsen_data<- sensitivity_emission%>%
+  group_by(variable, year) %>%
+  summarize(Mean_sen= mean(value), SD_sen= sd(value), Min_sen= min(value), Max_sen= max(value))
+
+exp_data<- left_join(expmulti_data, expsen_data)
+
+ggplot(exp_data, aes(year)) +
+   geom_ribbon(aes(ymin= Min_multi, ymax= Max_multi), fill= "pink") +
+  geom_ribbon(aes(ymin= Min_sen, ymax= Max_sen), fill= "green") +
+  geom_line(aes(y= Mean_multi, color= variable), size= 0.5) +
+  geom_line(aes(y= Mean_sen, color= variable), size= 0.5)+
+  facet_wrap(~variable, scales = "free_y")+
+  labs( title= "Multi Parameter vs Natural CH4 Run", y= "Mean")
+shutdown(core)
+```
+
