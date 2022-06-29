@@ -193,35 +193,40 @@ We then create two data frames- one for each parameter. First isolating the vari
 ```{r rnorm2}
 N_RUNS<- 10
 
-nat_value<- results %>%
-  filter(variable== "CH4N") 
-nat_mean<- nat_value$value
-nat_sd<- nat_mean*0.2
-nat_data<- data.frame(value= rnorm(N_RUNS, nat_mean, nat_sd))
+vars<- results %>%
+  select(variable, scenario)
 
-pre_value<- results %>%
-  filter(variable== "M0") 
-pre_mean<- pre_value$value
-pre_sd<- pre_mean*0.2
-pre_data<- data.frame(value= rnorm(N_RUNS, pre_mean, pre_sd))
+vlist<- list(a= vars[1,1], b= vars[2,1], c= vars[3,1], d= vars[4,1])
 
-soil_value<- results %>%
-  filter(variable== "Tsoil") 
-soil_mean<- soil_value$value
-soil_sd<- soil_mean*0.2
-soil_data<- data.frame(value= rnorm(N_RUNS, soil_mean, soil_sd))
 
-strat_value<- results %>%
-  filter(variable== "Tstrat") 
-strat_mean<- strat_value$value
-strat_sd<- strat_mean*0.2
-strat_data<- data.frame(value= rnorm(N_RUNS, strat_mean, strat_sd))
+stats_run<- function(parameter, df, sval){
+  pvalue<- df %>%
+    filter(variable== parameter)
+  mean<- pvalue$value
+  sd<- mean*sval
+  name<- paste0(parameter, "_value")
+  data<- data.frame(value= rnorm(N_RUNS, mean, sd))
+  colnames(data)<- c(name)
+  data
+}
+
+test1<- lapply(vlist, stats_run, results, 0.2)
+final_results<- bind_cols(test1)
+
+rows<- seq(nrow(final_results))
+
+data<- final_results %>%
+  mutate(new_col= rows)
+
+colnames(data)<- c("NATURAL_CH4", "PREINDUSTRIAL_CH4", "LIFETIME_SOIL", "LIFETIME_STRAT", "run_number")
+
 ```
 
 Combining the data frames with `bind.cols` and renaming the columns.
 
-```{r data_frame}
-data<- bind_cols(pre_data, nat_data, soil_data, strat_data) %>%
+```#{r data_frame}
+data<- final_reuslts %>%
+  bind_cols(CH4N_value, M0_value, Tsoil_value, Tstrat_value) %>%
   as_tibble()
 rows<- seq(nrow(data))
 data<- data %>%
@@ -298,7 +303,6 @@ ggplot(full_data, aes(y= value, x=  year, color= run_number, group = run_number)
   geom_line() +
   facet_wrap(~variable, scales = "free_y")+
   scale_color_viridis_c() 
-#shutdown(core)
 ```
 
 ... A better graph for our runs is `geom_ribbon`, which graphs the mean of our outputs each year, as well as the maximum and minimum values. First we find the mean, standard deviation, minimum and maximum using `summarize` - then we can plot the results.
@@ -312,12 +316,12 @@ sum_data<-  long_fdata%>%
 ggplot(sum_data, aes(year)) +
    geom_ribbon(aes(ymin= Min_val, ymax= Max_val, fill= variable), alpha= 0.3) +
   geom_line(aes(y= Mean_val, color= variable), size= 0.5) +
-  facet_wrap(~variable, scales = "free_y")
+  facet_wrap(~variable, scales = "free")
 
 ```
 
 
-```{r experimenting}
+```{r nat-vs-multi}
 
 expmulti_data<-  long_fdata%>%
   group_by(variable, year) %>%
@@ -330,8 +334,8 @@ expsen_data<- sensitivity_emission%>%
 exp_data<- left_join(expmulti_data, expsen_data)
 
 ggplot(exp_data, aes(year)) +
-   geom_ribbon(aes(ymin= Min_multi, ymax= Max_multi), fill= "pink") +
-  geom_ribbon(aes(ymin= Min_sen, ymax= Max_sen), fill= "green") +
+   geom_ribbon(aes(ymin= Min_multi, ymax= Max_multi, fill= variable), alpha= 0.3) +
+  geom_ribbon(aes(ymin= Min_sen, ymax= Max_sen), fill= "black") +
   geom_line(aes(y= Mean_multi, color= variable), size= 0.5) +
   geom_line(aes(y= Mean_sen, color= variable), size= 0.5)+
   facet_wrap(~variable, scales = "free_y")+
