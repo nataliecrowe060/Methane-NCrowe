@@ -329,7 +329,8 @@ pair_data<- long_fdata %>%
   select(-scenario, -units) %>%
   pivot_wider(names_from = variable, values_from = value)
 
-ggpairs(pair_data, aes( color= parameter, alpha= 0.4))
+ggpairs(pair_data, aes( color= parameter, alpha= 0.4),
+ upper = list(continuous = wrap("cor", size = 2.5), combo = "facetdensity"))
 
 ```
 
