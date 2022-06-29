@@ -321,6 +321,20 @@ ggplot(sum_data, aes(year)) +
 ```
 
 
+
+```{r pairs-graph}
+library(GGally)
+
+pair_data<- long_fdata %>%
+  select(-scenario, -units) %>%
+  pivot_wider(names_from = variable, values_from = value)
+
+ggpairs(pair_data, aes( color= parameter, alpha= 0.4))
+
+```
+
+
+
 ```{r nat-vs-multi}
 
 expmulti_data<-  long_fdata%>%
