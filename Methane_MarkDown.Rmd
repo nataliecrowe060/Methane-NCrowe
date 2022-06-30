@@ -359,36 +359,39 @@ ggplot(exp_data, aes(year)) +
 ## Relative Importance
 
 ```{r rel-data}
-rell_data<- full_data%>%
-  select(-scenario, -units, -run_number) %>%
-  pivot_wider(names_from = variable, values_from = value)
+rell_data<- full_data %>% 
+  select(c(-scenario, -units, -run_number))
 
-conc2100_data<- rell_data %>%
-  filter(year== 2100) %>%
-  select(CO2_concentration, LIFETIME_SOIL, LIFETIME_STRAT, NATURAL_CH4, PREINDUSTRIAL_CH4)
+head(rell_data)
+
 ```
 
 
 ```{r rel-func}
-Conc_2100 <- lm(CO2_concentration ~., data= conc2100_data )
-summary(Conc_2100)
 
 library(relaimpo)
-calc.relimp(Conc_2100)
+?relaimpo
+output_year<- rell_data %>%
+  filter(year== 2100, variable== "CO2_concentration") %>%
+  select(c(LIFETIME_SOIL, LIFETIME_STRAT, NATURAL_CH4, PREINDUSTRIAL_CH4, value))
 
-relitive_function<- function(output, yearask) {
+relitive_function<- function(var, yearask) {
   output_year<- rell_data %>%
-  filter(year== yearask) %>%
-  select(LIFETIME_SOIL, LIFETIME_STRAT, NATURAL_CH4, PREINDUSTRIAL_CH4, output)
+  filter(year== yearask, variable== var) %>%
+  select(LIFETIME_SOIL, LIFETIME_STRAT, NATURAL_CH4, PREINDUSTRIAL_CH4, value)
+  output_year
   
-  lm_data<- lm(output ~., data= output_year )
-summary(lm_data)
+#lm_data<- lm(value ~., data= output_year )
+#summary(lm_data)
+#lm_data
 
-result<- calc.relimp(lm_data)
- result
+#result<- calc.relimp(lm_data)
+#result
 }
 
-relitive_function(CO2_concentration, 2100)
+relitive_function("CO2_concentration", 2100)
+head(output_year)
+
 
 shutdown(core)
 ```
