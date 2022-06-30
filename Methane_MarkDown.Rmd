@@ -320,7 +320,7 @@ ggplot(sum_data, aes(year)) +
 
 ```
 
-
+To plot all outputs by all parameters, we can use `ggpairs` as an alternative to manually creating all of them. In this example we select for the year 2100, remove all non-numeric columns, and use `pivot_wider` to create four columns for our variable outputs.
 
 ```{r pairs-graph}
 library(GGally)
@@ -334,7 +334,9 @@ ggpairs(pair_data, aes(), upper = list(continuous = "blank"))
 
 ```
 
+### Ploting parameter compairisons
 
+To visualize the difference between influence of one parameter (in this case `NATURAL_CH4`) and all four on our output variables over time, we can combine two `geom_line` and `geom_ribbon` plots. First, by using `summarize` to find mean, standard deviation, minimum and maximum. Then, combining the two into a single data frame and plotting. In our graph black represents a run only changing `NATURAL_CH4`.
 
 ```{r nat-vs-multi}
 
@@ -358,19 +360,20 @@ ggplot(exp_data, aes(year)) +
 ```
 ## Relative Importance
 
+Relative importance is used to understand how great of an impact different parameters have on a variable. Since our parameters impact one another as well, we must look at there impacts on the variable relative to each another. To do this we first alter a data frame to exclude information that may prevent our code from working.
+
 ```{r rel-data}
 rell_data<- full_data %>% 
   dplyr::select(-scenario, -units, -run_number)
-
-head(rell_data)
 ```
 
+Then with R package `relaimpo`, we create a function that filters by year and variable, and then runs a relative importance test (`calc.relimp`).
 
 ```{r rel-func}
 
 library(relaimpo)
 
-relitive_function<- function(yearask, var) {
+relative_function<- function(yearask, var) {
   output_year<- rell_data %>%
   filter(year== yearask, variable== var) %>%
   dplyr::select(LIFETIME_SOIL, LIFETIME_STRAT, NATURAL_CH4, PREINDUSTRIAL_CH4, value)
@@ -386,19 +389,24 @@ output$year<- yearask
 output$variable<- var
 output
 }
+```
 
-lap_Co2Concentration<- lapply(as.list(2000:2100), relitive_function, "CO2_concentration")
+Using `lapply`, we can run our function with a selected variable and years (in an `as.list`). This makes our function run as many times as there are years asked for. We then `bind_rows` into a single data frame and repeat for all parametors.
+
+```{r rel-lapply}
+lap_Co2Concentration<- lapply(as.list(2000:2100), relative_function, "CO2_concentration")
 Rel_Co2Concentration<- bind_rows(lap_Co2Concentration)
 
-lap_RF_tot<- lapply(as.list(2000:2100), relitive_function, "RF_tot")
+lap_RF_tot<- lapply(as.list(2000:2100), relative_function, "RF_tot")
 Rel_RF_tot<- bind_rows(lap_RF_tot)
 
-lap_RF_CO2<- lapply(as.list(2000:2100), relitive_function, "RF_CO2")
+lap_RF_CO2<- lapply(as.list(2000:2100), relative_function, "RF_CO2")
 Rel_RF_CO2<- bind_rows(lap_RF_CO2)
 
-lap_global_tas<- lapply(as.list(2000:2100), relitive_function, "global_tas")
+lap_global_tas<- lapply(as.list(2000:2100), relative_function, "global_tas")
 Rel_global_tas<- bind_rows(lap_global_tas)
 
 shutdown(core)
+
 ```
 
