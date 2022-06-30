@@ -355,6 +355,41 @@ ggplot(exp_data, aes(year)) +
   geom_line(aes(y= Mean_sen, color= variable), size= 0.5)+
   facet_wrap(~variable, scales = "free_y")+
   labs( title= "Multi Parameter vs Natural CH4 Run", y= "Mean")
+```
+## Relative Importance
+
+```{r rel-data}
+rell_data<- full_data%>%
+  select(-scenario, -units, -run_number) %>%
+  pivot_wider(names_from = variable, values_from = value)
+
+conc2100_data<- rell_data %>%
+  filter(year== 2100) %>%
+  select(CO2_concentration, LIFETIME_SOIL, LIFETIME_STRAT, NATURAL_CH4, PREINDUSTRIAL_CH4)
+```
+
+
+```{r rel-func}
+Conc_2100 <- lm(CO2_concentration ~., data= conc2100_data )
+summary(Conc_2100)
+
+library(relaimpo)
+calc.relimp(Conc_2100)
+
+relitive_function<- function(output, yearask) {
+  output_year<- rell_data %>%
+  filter(year== yearask) %>%
+  select(LIFETIME_SOIL, LIFETIME_STRAT, NATURAL_CH4, PREINDUSTRIAL_CH4, output)
+  
+  lm_data<- lm(output ~., data= output_year )
+summary(lm_data)
+
+result<- calc.relimp(lm_data)
+ result
+}
+
+relitive_function(CO2_concentration, 2100)
+
 shutdown(core)
 ```
 
