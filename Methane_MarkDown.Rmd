@@ -325,12 +325,12 @@ ggplot(sum_data, aes(year)) +
 ```{r pairs-graph}
 library(GGally)
 
-pair_data<- long_fdata %>%
-  select(-scenario, -units) %>%
+pair_data<- full_data %>%
+   filter(year== 2100) %>%
+  dplyr::select(-scenario, -units, -run_number, -year) %>%
   pivot_wider(names_from = variable, values_from = value)
 
-ggpairs(pair_data, aes( color= parameter, alpha= 0.4),
- upper = list(continuous = wrap("cor", size = 2.5), combo = "facetdensity"))
+ggpairs(pair_data, aes(), upper = list(continuous = "blank"))
 
 ```
 
@@ -360,38 +360,44 @@ ggplot(exp_data, aes(year)) +
 
 ```{r rel-data}
 rell_data<- full_data %>% 
-  select(c(-scenario, -units, -run_number))
+  dplyr::select(-scenario, -units, -run_number)
 
 head(rell_data)
-
 ```
 
 
 ```{r rel-func}
 
 library(relaimpo)
-?relaimpo
-output_year<- rell_data %>%
-  filter(year== 2100, variable== "CO2_concentration") %>%
-  select(c(LIFETIME_SOIL, LIFETIME_STRAT, NATURAL_CH4, PREINDUSTRIAL_CH4, value))
 
-relitive_function<- function(var, yearask) {
+relitive_function<- function(yearask, var) {
   output_year<- rell_data %>%
   filter(year== yearask, variable== var) %>%
-  select(LIFETIME_SOIL, LIFETIME_STRAT, NATURAL_CH4, PREINDUSTRIAL_CH4, value)
+  dplyr::select(LIFETIME_SOIL, LIFETIME_STRAT, NATURAL_CH4, PREINDUSTRIAL_CH4, value)
   output_year
   
-#lm_data<- lm(value ~., data= output_year )
-#summary(lm_data)
-#lm_data
+lm_data<- lm(value ~., data= output_year )
+summary(lm_data)
+lm_data
 
-#result<- calc.relimp(lm_data)
-#result
+result<- calc.relimp(lm_data, rela= TRUE)
+output<- result$lmg
+output$year<- yearask
+output$variable<- var
+output
 }
 
-relitive_function("CO2_concentration", 2100)
-head(output_year)
+lap_Co2Concentration<- lapply(as.list(2000:2100), relitive_function, "CO2_concentration")
+Rel_Co2Concentration<- bind_rows(lap_Co2Concentration)
 
+lap_RF_tot<- lapply(as.list(2000:2100), relitive_function, "RF_tot")
+Rel_RF_tot<- bind_rows(lap_RF_tot)
+
+lap_RF_CO2<- lapply(as.list(2000:2100), relitive_function, "RF_CO2")
+Rel_RF_CO2<- bind_rows(lap_RF_CO2)
+
+lap_global_tas<- lapply(as.list(2000:2100), relitive_function, "global_tas")
+Rel_global_tas<- bind_rows(lap_global_tas)
 
 shutdown(core)
 ```
