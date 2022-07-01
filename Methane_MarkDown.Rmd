@@ -191,7 +191,7 @@ results <- fetchvars(core, NA, c(NATURAL_CH4(), PREINDUSTRIAL_CH4(),LIFETIME_SOI
 We then create two data frames- one for each parameter. First isolating the variable, and then calculating mean and standard deviation for the variable's value. The using `rnorm` we create 10 values pulled from the normal distribution, putting our results in `data.frame`.
 
 ```{r rnorm2}
-N_RUNS<- 10
+N_RUNS<- 100
 
 vars<- results %>%
   select(variable, scenario)
@@ -358,6 +358,8 @@ ggplot(exp_data, aes(year)) +
   facet_wrap(~variable, scales = "free_y")+
   labs( title= "Multi Parameter vs Natural CH4 Run", y= "Mean")
 ```
+
+
 ## Relative Importance
 
 Relative importance is used to understand how great of an impact different parameters have on a variable. Since our parameters impact one another as well, we must look at there impacts on the variable relative to each another. To do this we first alter a data frame to exclude information that may prevent our code from working.
@@ -406,7 +408,52 @@ Rel_RF_CO2<- bind_rows(lap_RF_CO2)
 lap_global_tas<- lapply(as.list(2000:2100), relative_function, "global_tas")
 Rel_global_tas<- bind_rows(lap_global_tas)
 
-shutdown(core)
+```
 
+Visualizing this data can make it more apparent the trend of relative importance of each variable.
+
+```{r rel-graphs}
+#Co2 Concentration
+Rel_Co2Concentrationlong<- Rel_Co2Concentration %>%
+  pivot_longer(!c(year, variable), names_to = "parameter", values_to = "value")
+
+Rel_cconc_graph<- ggplot(Rel_Co2Concentrationlong, aes(year, value, color= parameter))+
+  geom_line()+
+  facet_wrap(~parameter, scales = "free_y")+
+  labs(title= "Relitive Importance CO2 Concentration")
+
+#RF Total
+Rel_RF_totlong<- Rel_RF_tot %>%
+  pivot_longer(!c(year, variable), names_to = "parameter", values_to = "value")
+
+Rel_RF_graph<- ggplot(Rel_RF_totlong, aes(year, value, color= parameter))+
+  geom_line()+
+  facet_wrap(~parameter, scales = "free_y")+
+  labs(title= "Relitive Importance RF Total")
+
+#RF CO2 
+Rel_RF_CO2long<- Rel_RF_CO2 %>%
+  pivot_longer(!c(year, variable), names_to = "parameter", values_to = "value")
+
+Rel_RF_CO2graph<- ggplot(Rel_RF_CO2long, aes(year, value, color= parameter))+
+  geom_line()+
+  facet_wrap(~parameter, scales = "free_y")+
+  labs(title= "Relitive Importance RF CO2")
+
+#Global Tas
+Rel_global_taslong<- Rel_global_tas %>%
+  pivot_longer(!c(year, variable), names_to = "parameter", values_to = "value")
+
+Rel_global_tasgraph<- ggplot(Rel_global_taslong, aes(year, value, color= parameter))+
+  geom_line()+
+  facet_wrap(~parameter, scales = "free_y")+
+  labs(title= "Relitive Importance Global Tas")
+
+Rel_cconc_graph
+Rel_RF_graph
+Rel_RF_CO2graph
+Rel_global_tasgraph
+                         
+shutdown(core)
 ```
 
