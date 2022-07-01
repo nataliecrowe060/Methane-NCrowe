@@ -6,7 +6,6 @@ output:
   html_document:
     toc: true
     toc_float: true
-    code_folding: hide
     theme: readable
 ---
 
@@ -68,7 +67,7 @@ results %>%
 
 ### Adding Another Dataframe
 Let’s compare this data to NOAA’s data of yearly mean CH4 increase. We first have to read the file using read.table, then we can assign names to each column.
-```{r noaa-data}
+```{r noaa-data, message= FALSE}
 noaa<- read.table("noaa_data/ch4_annmean_gl.txt.txt", skip = 61)
 noaa_data <- noaa %>%
   rename(year = V1, mean = V2, unc = V3) %>%
@@ -78,7 +77,7 @@ noaa_data <- noaa %>%
 
 We then tell hector we want to look at CH4 concentration in the years corresponding to the NOAA data.
 
-```{r hector-data}
+```{r hector-data, message= FALSE}
 hector_data <- results %>%
   filter(year %in% noaa_data$year,
          variable == "CH4_concentration") %>%
@@ -117,9 +116,12 @@ ggplot(data= results, aes(x= year, y= value, color= units))+
 
 To examine SSP245's Natural methane  sensitivity we first ask hector to fetch data for the `NATURAL_CH4` constant. We then create a function to run this parameter set to a particular value. 
 
-```{r call-for-param}
+```{r natco2-core, include=FALSE}
 reset(core)
 run(core)
+```
+
+```{r call-for-param}
 default<- fetchvars(core, NA, NATURAL_CH4())
 
 param<- function(core, parameter, value) {
@@ -136,7 +138,7 @@ param<- function(core, parameter, value) {
 
 Then we tell hector to run a range of values. In this case we ask for 20% above and bellow the set value of `NATURAL_CH4`(341Tg) at intervals of 5 +/-20%. These set values are labelled as `ch4-seq`.
 
-```{r sen-param}
+```{r sen-param, message= FALSE}
 run_with_param_range <- function(core, parameter, values) {
   mapped <- Map(function(x) param(core, parameter, x), values)
   Reduce(rbind, mapped)
@@ -165,7 +167,7 @@ ggplot(sensitivity_emission) +
 
 Using the same `Natural_CH4` data, we can also make a histogram plot. Since we already made `ch4_low` and `ch4_high` with levels +/-20%, we can re-purpose them for this graph.
 
-```{r rnorm1}
+```{r rnorm1, message= FALSE}
 sdn<- meann*0.2
 data<- data.frame(value= rnorm(1000, meann, sdn))
 ```
@@ -182,15 +184,18 @@ ggplot(data, aes(x=value))+
 
 Working with four parameters `NATURAL_CH4`, `PREINDUSTRIAL_CH4`, `LIFETIME_SOIL` and `LIFETIME_STRAT` to create a sensitivity analysis. First we run all of them through `fetchvars`.
 
-```{r core}
+```{r core, include=FALSE}
 reset(core)
 run(core)
+```
+
+```{r fetch-multi}
 results <- fetchvars(core, NA, c(NATURAL_CH4(), PREINDUSTRIAL_CH4(),LIFETIME_SOIL(), LIFETIME_STRAT()))
 ```
 
 We then create two data frames- one for each parameter. First isolating the variable, and then calculating mean and standard deviation for the variable's value. The using `rnorm` we create 10 values pulled from the normal distribution, putting our results in `data.frame`.
 
-```{r rnorm2}
+```{r rnorm2, message=FALSE}
 N_RUNS<- 100
 
 vars<- results %>%
@@ -222,21 +227,9 @@ colnames(data)<- c("NATURAL_CH4", "PREINDUSTRIAL_CH4", "LIFETIME_SOIL", "LIFETIM
 
 ```
 
-Combining the data frames with `bind.cols` and renaming the columns.
-
-```#{r data_frame}
-data<- final_reuslts %>%
-  bind_cols(CH4N_value, M0_value, Tsoil_value, Tstrat_value) %>%
-  as_tibble()
-rows<- seq(nrow(data))
-data<- data %>%
-  mutate(new_col= rows)
-colnames(data)<- c("PREINDUSTRIAL_CH4", "NATURAL_CH4", "LIFETIME_SOIL", "LIFETIME_STRAT", "run_number")
-```
-
 Using a `for` loop function, we can run a line of our parameter data through the code we want- made into a `function`. 
 
-```{r function_mod}
+```{r function_mod, message= FALSE}
 multi_param<- function(core, pdata){ #create input for function
   for(p in colnames(pdata)) { 
     var<- do.call(p, list()) #create vector for row running
@@ -253,7 +246,7 @@ multi_param<- function(core, pdata){ #create input for function
 
 To run our values through this new function, we create another `for ` loop to put in each row of data one by one. Then with `bind_rows` we can use these created values to form a data frame.
 
-```{r output}
+```{r output, message= FALSE}
 output<- list() #make an empty list
 for(rownum in 1:nrow(data)){ #loop starting with 1st row of data going from 1-end of data
   output[[rownum]]<- multi_param(core, data[rownum,][-5]) #output as a row for inputs of all columns in row running(1-end data) besides 5th
@@ -268,7 +261,7 @@ full_data<- left_join(output_data, data, by= "run_number") #add in param values 
 
 Now that we've created multi-parameter data, we can visualize our results. Using the `pivot_longer` function from `tidyr` we first group our parameters into two columns: `parameter` and `param_value`. This will make graphing much easier, since we are now only working with one variable type.
 
-```{r piv-long-data}
+```{r piv-long-data, message= FALSE}
 long_fdata<- full_data %>%
   pivot_longer(!c(scenario, year, variable, value, units, run_number), names_to= "parameter", values_to= "param_value")
 ```
@@ -322,9 +315,12 @@ ggplot(sum_data, aes(year)) +
 
 To plot all outputs by all parameters, we can use `ggpairs` as an alternative to manually creating all of them. In this example we select for the year 2100, remove all non-numeric columns, and use `pivot_wider` to create four columns for our variable outputs.
 
-```{r pairs-graph}
+```{r pairs-ggally, include=FALSE}
 library(GGally)
+```
 
+
+```{r pairs-graph}
 pair_data<- full_data %>%
    filter(year== 2100) %>%
   dplyr::select(-scenario, -units, -run_number, -year) %>%
@@ -364,17 +360,19 @@ ggplot(exp_data, aes(year)) +
 
 Relative importance is used to understand how great of an impact different parameters have on a variable. Since our parameters impact one another as well, we must look at there impacts on the variable relative to each another. To do this we first alter a data frame to exclude information that may prevent our code from working.
 
-```{r rel-data}
+```{r rel-data, message= FALSE}
 rell_data<- full_data %>% 
   dplyr::select(-scenario, -units, -run_number)
 ```
 
 Then with R package `relaimpo`, we create a function that filters by year and variable, and then runs a relative importance test (`calc.relimp`).
 
-```{r rel-func}
-
+```{r rel-relaimpo, include=FALSE}
 library(relaimpo)
+```
 
+
+```{r rel-func, warning=FALSE}
 relative_function<- function(yearask, var) {
   output_year<- rell_data %>%
   filter(year== yearask, variable== var) %>%
@@ -393,9 +391,9 @@ output
 }
 ```
 
-Using `lapply`, we can run our function with a selected variable and years (in an `as.list`). This makes our function run as many times as there are years asked for. We then `bind_rows` into a single data frame and repeat for all parametors.
+Using `lapply`, we can run our function with a selected variable and years (in an `as.list`). This makes our function run as many times as there are years asked for. We then `bind_rows` into a single data frame and repeat for all parameters.
 
-```{r rel-lapply}
+```{r rel-lapply, warning=FALSE}
 lap_Co2Concentration<- lapply(as.list(2000:2100), relative_function, "CO2_concentration")
 Rel_Co2Concentration<- bind_rows(lap_Co2Concentration)
 
