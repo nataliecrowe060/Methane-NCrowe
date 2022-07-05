@@ -415,36 +415,35 @@ Visualizing this data can make it more apparent the trend of relative importance
 Rel_Co2Concentrationlong<- Rel_Co2Concentration %>%
   pivot_longer(!c(year, variable), names_to = "parameter", values_to = "value")
 
-Rel_cconc_graph<- ggplot(Rel_Co2Concentrationlong, aes(year, value, color= parameter))+
-  geom_line()+
-  facet_wrap(~parameter, scales = "free_y")+
-  labs(title= "Relitive Importance CO2 Concentration")
+Rel_cconc_graph<-
+  ggplot(Rel_Co2Concentrationlong, aes(x= year, y= value, fill= parameter))+
+  geom_area()+
+  labs(title= "Relitive Importance Co2 Concentration")
 
 #RF Total
 Rel_RF_totlong<- Rel_RF_tot %>%
   pivot_longer(!c(year, variable), names_to = "parameter", values_to = "value")
 
-Rel_RF_graph<- ggplot(Rel_RF_totlong, aes(year, value, color= parameter))+
-  geom_line()+
-  facet_wrap(~parameter, scales = "free_y")+
+Rel_RF_graph<- 
+  ggplot(Rel_RF_totlong, aes(x= year, y= value, fill= parameter))+
+  geom_area()+
   labs(title= "Relitive Importance RF Total")
 
 #RF CO2 
 Rel_RF_CO2long<- Rel_RF_CO2 %>%
   pivot_longer(!c(year, variable), names_to = "parameter", values_to = "value")
 
-Rel_RF_CO2graph<- ggplot(Rel_RF_CO2long, aes(year, value, color= parameter))+
-  geom_line()+
-  facet_wrap(~parameter, scales = "free_y")+
+Rel_RF_CO2graph<-  
+  ggplot(Rel_RF_CO2long, aes(x= year, y= value, fill= parameter))+
+  geom_area()+
   labs(title= "Relitive Importance RF CO2")
 
 #Global Tas
 Rel_global_taslong<- Rel_global_tas %>%
   pivot_longer(!c(year, variable), names_to = "parameter", values_to = "value")
 
-Rel_global_tasgraph<- ggplot(Rel_global_taslong, aes(year, value, color= parameter))+
-  geom_line()+
-  facet_wrap(~parameter, scales = "free_y")+
+Rel_global_tasgraph<-  ggplot(Rel_global_taslong, aes(x= year, y= value, fill= parameter))+
+  geom_area()+
   labs(title= "Relitive Importance Global Tas")
 
 Rel_cconc_graph
