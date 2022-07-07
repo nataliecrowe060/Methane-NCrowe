@@ -193,7 +193,7 @@ run(core)
 results <- fetchvars(core, NA, c(NATURAL_CH4(), PREINDUSTRIAL_CH4(),LIFETIME_SOIL(), LIFETIME_STRAT()))
 ```
 
-We then create two data frames- one for each parameter. First isolating the variable, and then calculating mean and standard deviation for the variable's value. The using `rnorm` we create 10 values pulled from the normal distribution, putting our results in `data.frame`.
+We then create two data frames- one for each parameter. First isolating the variable, and then calculating mean and standard deviation for the variable's value. The using `rnorm` we create `N_RUNS` values pulled from the normal distribution, putting our results in `data.frame`.
 
 ```{r rnorm2, message= FALSE, warning=FALSE, results= FALSE}
 N_RUNS<- 100
@@ -422,7 +422,7 @@ Rel_Co2Concentrationlong<- Rel_Co2Concentration %>%
 Rel_cconc_graph<-
   ggplot(Rel_Co2Concentrationlong, aes(x= year, y= value, fill= parameter))+
   geom_area()+
-  labs(title= "Relitive Importance Co2 Concentration")
+  labs(title= "Relative Importance Co2 Concentration")
 
 #RF Total
 Rel_RF_totlong<- Rel_RF_tot %>%
@@ -431,7 +431,7 @@ Rel_RF_totlong<- Rel_RF_tot %>%
 Rel_RF_graph<- 
   ggplot(Rel_RF_totlong, aes(x= year, y= value, fill= parameter))+
   geom_area()+
-  labs(title= "Relitive Importance RF Total")
+  labs(title= "Relative Importance RF Total")
 
 #RF CO2 
 Rel_RF_CO2long<- Rel_RF_CO2 %>%
@@ -440,7 +440,7 @@ Rel_RF_CO2long<- Rel_RF_CO2 %>%
 Rel_RF_CO2graph<-  
   ggplot(Rel_RF_CO2long, aes(x= year, y= value, fill= parameter))+
   geom_area()+
-  labs(title= "Relitive Importance RF CO2")
+  labs(title= "Relative Importance RF CO2")
 
 #Global Tas
 Rel_global_taslong<- Rel_global_tas %>%
@@ -448,7 +448,7 @@ Rel_global_taslong<- Rel_global_tas %>%
 
 Rel_global_tasgraph<-  ggplot(Rel_global_taslong, aes(x= year, y= value, fill= parameter))+
   geom_area()+
-  labs(title= "Relitive Importance Global Tas")
+  labs(title= "Relative Importance Global Tas")
 
 Rel_cconc_graph
 Rel_RF_graph
@@ -456,28 +456,39 @@ Rel_RF_CO2graph
 Rel_global_tasgraph
 ```
 
-Using `summary` we can produce statistical outputs for our relative importance data.
+Summarizing our data for `mean`, `min`, and `max` helps make it more clear the actual values parameter importance was calculated to be. To apply this to all the variable data frames we create a `function` and `group_by(parameter)` before summarizing. 
+
+```{r rel-summary-function}
+stats_function<- function(data){
+  data %>%
+    dplyr:: group_by(parameter) %>%
+    dplyr::select(-year, -variable) %>%
+    summarise(mean= mean(value), max= max(value), min= min(value))
+  }
+```
+
+CO2 concentration is influenced most by `PREINDUSTRIAL_CH4` with both the highest mean and highest range- meaning in every year calculated the parameter consistently was highest. This is consistant throughout the other parameters as well.
 
 ```{r rel-summary-CO2}
-stats_cO2Conc<- summary(Rel_Co2Concentration)
-stats_cO2Conc
+stats_Co2Concentration<- stats_function(Rel_Co2Concentrationlong)
+stats_Co2Concentration
 ```
-
+Radioactive forcing total 
 
 ```{r rel-summary-RFT}
-stats_RFtot<- summary(Rel_RF_tot)
+stats_RFtot<-stats_function(Rel_RF_totlong)
 stats_RFtot
 ```
-
+Radiative forcing CO2
 
 ```{r rel-summary-RFCO2}
-stats_RFCO2<- summary(Rel_RF_CO2)
+stats_RFCO2<- stats_function(Rel_RF_CO2long)
 stats_RFCO2
 ```
-
+Global tas
 
 ```{r reil-summary-global}
-stats_global<- summary(Rel_global_tas)
+stats_global<- stats_function(Rel_global_taslong)
 stats_global
 
 shutdown(core)
