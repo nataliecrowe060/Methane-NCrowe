@@ -130,7 +130,7 @@ param<- function(core, parameter, value) {
   setvar(core, NA, parameter, value, unit)
   reset(core)
   run(core)
-  result <- fetchvars(core, 2000:2100)
+  result <- fetchvars(core, 2000:2100, c(RF_CH4(), CONCENTRATIONS_CO2(), RF_TOTAL(), GLOBAL_TAS()))
   result[["parameter_value"]] <- value
   result
 }
@@ -144,7 +144,7 @@ run_with_param_range <- function(core, parameter, values) {
   Reduce(rbind, mapped)
 }
 valuen<- default %>%
-  select(value)
+  dplyr::select(value)
 meann<- valuen$value
 ch4_low <- meann * (1 - 0.2)
 ch4_high <- meann * (1 + 0.2)
@@ -190,7 +190,8 @@ run(core)
 ```
 
 ```{r fetch-multi, message= FALSE, warning=FALSE, results= FALSE}
-results <- fetchvars(core, NA, c(NATURAL_CH4(), PREINDUSTRIAL_CH4(),LIFETIME_SOIL(), LIFETIME_STRAT()))
+results <- fetchvars(core, NA, c(NATURAL_CH4(), PREINDUSTRIAL_CH4(),LIFETIME_SOIL(), LIFETIME_STRAT())) 
+
 ```
 
 We then create two data frames- one for each parameter. First isolating the variable, and then calculating mean and standard deviation for the variable's value. The using `rnorm` we create `N_RUNS` values pulled from the normal distribution, putting our results in `data.frame`.
@@ -199,7 +200,7 @@ We then create two data frames- one for each parameter. First isolating the vari
 N_RUNS<- 100
 
 vars<- results %>%
-  select(variable, scenario)
+  dplyr::select(variable, scenario)
 
 vlist<- list(a= vars[1,1], b= vars[2,1], c= vars[3,1], d= vars[4,1])
 
@@ -238,7 +239,7 @@ multi_param<- function(core, pdata){ #create input for function
     setvar(core, NA, var, pdata[p][[1]], unit) #set row vars from old to new values
     reset(core) #reset core to run new values
     run(core) #run new params
-    result<- fetchvars(core, 2000:2100) #results for x years
+    result<- fetchvars(core, 2000:2100, c(RF_CH4(), CONCENTRATIONS_CO2(), RF_TOTAL(), GLOBAL_TAS())) #results for x years
   }
   result
 }
@@ -404,8 +405,8 @@ Rel_Co2Concentration<- bind_rows(lap_Co2Concentration)
 lap_RF_tot<- lapply(as.list(2000:2100), relative_function, "RF_tot")
 Rel_RF_tot<- bind_rows(lap_RF_tot)
 
-lap_RF_CO2<- lapply(as.list(2000:2100), relative_function, "RF_CO2")
-Rel_RF_CO2<- bind_rows(lap_RF_CO2)
+lap_FCH4<- lapply(as.list(2000:2100), relative_function, "FCH4")
+Rel_FCH4<- bind_rows(lap_FCH4)
 
 lap_global_tas<- lapply(as.list(2000:2100), relative_function, "global_tas")
 Rel_global_tas<- bind_rows(lap_global_tas)
@@ -433,14 +434,14 @@ Rel_RF_graph<-
   geom_area()+
   labs(title= "Relative Importance RF Total")
 
-#RF CO2 
-Rel_RF_CO2long<- Rel_RF_CO2 %>%
+#FCH4 
+Rel_FCH4long<- Rel_FCH4 %>%
   pivot_longer(!c(year, variable), names_to = "parameter", values_to = "value")
 
-Rel_RF_CO2graph<-  
-  ggplot(Rel_RF_CO2long, aes(x= year, y= value, fill= parameter))+
+Rel_FCH4graph<-  
+  ggplot(Rel_FCH4long, aes(x= year, y= value, fill= parameter))+
   geom_area()+
-  labs(title= "Relative Importance RF CO2")
+  labs(title= "Relative Importance Radiative Forcing CH4")
 
 #Global Tas
 Rel_global_taslong<- Rel_global_tas %>%
@@ -452,7 +453,7 @@ Rel_global_tasgraph<-  ggplot(Rel_global_taslong, aes(x= year, y= value, fill= p
 
 Rel_cconc_graph
 Rel_RF_graph
-Rel_RF_CO2graph
+Rel_FCH4graph
 Rel_global_tasgraph
 ```
 
@@ -467,23 +468,23 @@ stats_function<- function(data){
   }
 ```
 
-CO2 concentration is influenced most by `PREINDUSTRIAL_CH4` with both the highest mean and highest range- meaning in every year calculated the parameter consistently was highest. This is consistant throughout the other parameters as well.
+CO2 concentration is influenced most by `PREINDUSTRIAL_CH4` with both the highest mean and highest range- meaning in every year calculated the parameter consistently was highest. This is consistent throughout the other parameters as well most likely due to the high value of this constant, and therefor high change with a sd of 20%.
 
 ```{r rel-summary-CO2}
 stats_Co2Concentration<- stats_function(Rel_Co2Concentrationlong)
 stats_Co2Concentration
 ```
-Radioactive forcing total 
+Radiative forcing total 
 
 ```{r rel-summary-RFT}
 stats_RFtot<-stats_function(Rel_RF_totlong)
 stats_RFtot
 ```
-Radiative forcing CO2
+Radiative forcing FCH4
 
-```{r rel-summary-RFCO2}
-stats_RFCO2<- stats_function(Rel_RF_CO2long)
-stats_RFCO2
+```{r rel-summary-FCH4}
+stats_FCH4<- stats_function(Rel_FCH4long)
+stats_FCH4
 ```
 Global tas
 
