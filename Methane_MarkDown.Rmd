@@ -6,7 +6,6 @@ output:
   html_document:
     toc: true
     toc_float: true
-    code_folding: hide
     theme: readable
 ---
 
@@ -18,7 +17,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 Our first step is to create a core. Hector will use this to pull data from existing climate projections. Our projections will be from SSP245.
 
-```{r  Hector-core, message=FALSE}
+```{r  Hector-core, message= FALSE, warning=FALSE, results= FALSE}
 library(hector)
 library(ggplot2)
 library(dplyr)
@@ -68,7 +67,7 @@ results %>%
 
 ### Adding Another Dataframe
 Let’s compare this data to NOAA’s data of yearly mean CH4 increase. We first have to read the file using read.table, then we can assign names to each column.
-```{r noaa-data}
+```{r noaa-data, message= FALSE, warning=FALSE, results= FALSE}
 noaa<- read.table("noaa_data/ch4_annmean_gl.txt.txt", skip = 61)
 noaa_data <- noaa %>%
   rename(year = V1, mean = V2, unc = V3) %>%
@@ -78,7 +77,7 @@ noaa_data <- noaa %>%
 
 We then tell hector we want to look at CH4 concentration in the years corresponding to the NOAA data.
 
-```{r hector-data}
+```{r hector-data, message= FALSE, warning=FALSE, results= FALSE}
 hector_data <- results %>%
   filter(year %in% noaa_data$year,
          variable == "CH4_concentration") %>%
@@ -117,9 +116,12 @@ ggplot(data= results, aes(x= year, y= value, color= units))+
 
 To examine SSP245's Natural methane  sensitivity we first ask hector to fetch data for the `NATURAL_CH4` constant. We then create a function to run this parameter set to a particular value. 
 
-```{r call-for-param}
+```{r natco2-core, include=FALSE}
 reset(core)
 run(core)
+```
+
+```{r call-for-param, message= FALSE, warning=FALSE, results= FALSE}
 default<- fetchvars(core, NA, NATURAL_CH4())
 
 param<- function(core, parameter, value) {
@@ -128,7 +130,7 @@ param<- function(core, parameter, value) {
   setvar(core, NA, parameter, value, unit)
   reset(core)
   run(core)
-  result <- fetchvars(core, 2000:2100)
+  result <- fetchvars(core, 2000:2100, c(RF_CH4(), CONCENTRATIONS_CO2(), RF_TOTAL(), GLOBAL_TAS()))
   result[["parameter_value"]] <- value
   result
 }
@@ -136,13 +138,13 @@ param<- function(core, parameter, value) {
 
 Then we tell hector to run a range of values. In this case we ask for 20% above and bellow the set value of `NATURAL_CH4`(341Tg) at intervals of 5 +/-20%. These set values are labelled as `ch4-seq`.
 
-```{r sen-param}
+```{r sen-param, message= FALSE, warning=FALSE, results= FALSE}
 run_with_param_range <- function(core, parameter, values) {
   mapped <- Map(function(x) param(core, parameter, x), values)
   Reduce(rbind, mapped)
 }
 valuen<- default %>%
-  select(value)
+  dplyr::select(value)
 meann<- valuen$value
 ch4_low <- meann * (1 - 0.2)
 ch4_high <- meann * (1 + 0.2)
@@ -165,7 +167,7 @@ ggplot(sensitivity_emission) +
 
 Using the same `Natural_CH4` data, we can also make a histogram plot. Since we already made `ch4_low` and `ch4_high` with levels +/-20%, we can re-purpose them for this graph.
 
-```{r rnorm1}
+```{r rnorm1, message= FALSE, warning=FALSE, results= FALSE}
 sdn<- meann*0.2
 data<- data.frame(value= rnorm(1000, meann, sdn))
 ```
@@ -182,19 +184,23 @@ ggplot(data, aes(x=value))+
 
 Working with four parameters `NATURAL_CH4`, `PREINDUSTRIAL_CH4`, `LIFETIME_SOIL` and `LIFETIME_STRAT` to create a sensitivity analysis. First we run all of them through `fetchvars`.
 
-```{r core}
+```{r core, include=FALSE}
 reset(core)
 run(core)
-results <- fetchvars(core, NA, c(NATURAL_CH4(), PREINDUSTRIAL_CH4(),LIFETIME_SOIL(), LIFETIME_STRAT()))
 ```
 
-We then create two data frames- one for each parameter. First isolating the variable, and then calculating mean and standard deviation for the variable's value. The using `rnorm` we create 10 values pulled from the normal distribution, putting our results in `data.frame`.
+```{r fetch-multi, message= FALSE, warning=FALSE, results= FALSE}
+results <- fetchvars(core, NA, c(NATURAL_CH4(), PREINDUSTRIAL_CH4(),LIFETIME_SOIL(), LIFETIME_STRAT())) 
 
-```{r rnorm2}
-N_RUNS<- 10
+```
+
+We then create two data frames- one for each parameter. First isolating the variable, and then calculating mean and standard deviation for the variable's value. The using `rnorm` we create `N_RUNS` values pulled from the normal distribution, putting our results in `data.frame`.
+
+```{r rnorm2, message= FALSE, warning=FALSE, results= FALSE}
+N_RUNS<- 100
 
 vars<- results %>%
-  select(variable, scenario)
+  dplyr::select(variable, scenario)
 
 vlist<- list(a= vars[1,1], b= vars[2,1], c= vars[3,1], d= vars[4,1])
 
@@ -222,21 +228,9 @@ colnames(data)<- c("NATURAL_CH4", "PREINDUSTRIAL_CH4", "LIFETIME_SOIL", "LIFETIM
 
 ```
 
-Combining the data frames with `bind.cols` and renaming the columns.
-
-```#{r data_frame}
-data<- final_reuslts %>%
-  bind_cols(CH4N_value, M0_value, Tsoil_value, Tstrat_value) %>%
-  as_tibble()
-rows<- seq(nrow(data))
-data<- data %>%
-  mutate(new_col= rows)
-colnames(data)<- c("PREINDUSTRIAL_CH4", "NATURAL_CH4", "LIFETIME_SOIL", "LIFETIME_STRAT", "run_number")
-```
-
 Using a `for` loop function, we can run a line of our parameter data through the code we want- made into a `function`. 
 
-```{r function_mod}
+```{r function_mod, message= FALSE, warning=FALSE, results= FALSE}
 multi_param<- function(core, pdata){ #create input for function
   for(p in colnames(pdata)) { 
     var<- do.call(p, list()) #create vector for row running
@@ -245,7 +239,7 @@ multi_param<- function(core, pdata){ #create input for function
     setvar(core, NA, var, pdata[p][[1]], unit) #set row vars from old to new values
     reset(core) #reset core to run new values
     run(core) #run new params
-    result<- fetchvars(core, 2000:2100) #results for x years
+    result<- fetchvars(core, 2000:2100, c(RF_CH4(), CONCENTRATIONS_CO2(), RF_TOTAL(), GLOBAL_TAS())) #results for x years
   }
   result
 }
@@ -253,7 +247,7 @@ multi_param<- function(core, pdata){ #create input for function
 
 To run our values through this new function, we create another `for ` loop to put in each row of data one by one. Then with `bind_rows` we can use these created values to form a data frame.
 
-```{r output}
+```{r output, message= FALSE, warning=FALSE, results= FALSE}
 output<- list() #make an empty list
 for(rownum in 1:nrow(data)){ #loop starting with 1st row of data going from 1-end of data
   output[[rownum]]<- multi_param(core, data[rownum,][-5]) #output as a row for inputs of all columns in row running(1-end data) besides 5th
@@ -268,7 +262,7 @@ full_data<- left_join(output_data, data, by= "run_number") #add in param values 
 
 Now that we've created multi-parameter data, we can visualize our results. Using the `pivot_longer` function from `tidyr` we first group our parameters into two columns: `parameter` and `param_value`. This will make graphing much easier, since we are now only working with one variable type.
 
-```{r piv-long-data}
+```{r piv-long-data, message= FALSE, warning=FALSE, results= FALSE}
 long_fdata<- full_data %>%
   pivot_longer(!c(scenario, year, variable, value, units, run_number), names_to= "parameter", values_to= "param_value")
 ```
@@ -307,12 +301,14 @@ ggplot(full_data, aes(y= value, x=  year, color= run_number, group = run_number)
 
 ... A better graph for our runs is `geom_ribbon`, which graphs the mean of our outputs each year, as well as the maximum and minimum values. First we find the mean, standard deviation, minimum and maximum using `summarize` - then we can plot the results.
 
-```{r summary-graph}
-
+```{r summary-longdatag, message= FALSE, warning=FALSE, results= FALSE}
 sum_data<-  long_fdata%>%
   group_by(variable, year) %>%
   summarize(Mean_val= mean(value), SD_val= sd(value), Min_val= min(value), Max_val= max(value))
+```
 
+
+```{r summary-graph}
 ggplot(sum_data, aes(year)) +
    geom_ribbon(aes(ymin= Min_val, ymax= Max_val, fill= variable), alpha= 0.3) +
   geom_line(aes(y= Mean_val, color= variable), size= 0.5) +
@@ -320,24 +316,28 @@ ggplot(sum_data, aes(year)) +
 
 ```
 
+To plot all outputs by all parameters, we can use `ggpairs` as an alternative to manually creating all of them. In this example we select for the year 2100, remove all non-numeric columns, and use `pivot_wider` to create four columns for our variable outputs.
 
-
-```{r pairs-graph}
+```{r pairs-ggally, include=FALSE}
 library(GGally)
-
-pair_data<- long_fdata %>%
-  select(-scenario, -units) %>%
-  pivot_wider(names_from = variable, values_from = value)
-
-ggpairs(pair_data, aes( color= parameter, alpha= 0.4),
- upper = list(continuous = wrap("cor", size = 2.5), combo = "facetdensity"))
-
 ```
 
 
+```{r pairs-graph}
+pair_data<- full_data %>%
+   filter(year== 2100) %>%
+  dplyr::select(-scenario, -units, -run_number, -year) %>%
+  pivot_wider(names_from = variable, values_from = value)
 
-```{r nat-vs-multi}
+ggpairs(pair_data, aes(), upper = list(continuous = "blank"))
 
+```
+
+### Ploting parameter compairisons
+
+To visualize the difference between influence of one parameter (in this case `NATURAL_CH4`) and all four on our output variables over time, we can combine two `geom_line` and `geom_ribbon` plots. First, by using `summarize` to find mean, standard deviation, minimum and maximum. Then, combining the two into a single data frame and plotting. In our graph black represents a run only changing `NATURAL_CH4`.
+
+```{r nat-vs-multi-longdata, message= FALSE, warning=FALSE, results= FALSE}
 expmulti_data<-  long_fdata%>%
   group_by(variable, year) %>%
   summarize(Mean_multi= mean(value), SD_multi= sd(value), Min_multi= min(value), Max_multi= max(value))
@@ -347,7 +347,10 @@ expsen_data<- sensitivity_emission%>%
   summarize(Mean_sen= mean(value), SD_sen= sd(value), Min_sen= min(value), Max_sen= max(value))
 
 exp_data<- left_join(expmulti_data, expsen_data)
+```
 
+
+```{r nat-vs-multi}
 ggplot(exp_data, aes(year)) +
    geom_ribbon(aes(ymin= Min_multi, ymax= Max_multi, fill= variable), alpha= 0.3) +
   geom_ribbon(aes(ymin= Min_sen, ymax= Max_sen), fill= "black") +
@@ -355,6 +358,140 @@ ggplot(exp_data, aes(year)) +
   geom_line(aes(y= Mean_sen, color= variable), size= 0.5)+
   facet_wrap(~variable, scales = "free_y")+
   labs( title= "Multi Parameter vs Natural CH4 Run", y= "Mean")
+```
+
+
+## Relative Importance
+
+Relative importance is used to understand how great of an impact different parameters have on a variable. Since our parameters impact one another as well, we must look at there impacts on the variable relative to each another. To do this we first alter a data frame to exclude information that may prevent our code from working.
+
+```{r rel-data, message= FALSE, warning=FALSE, results= FALSE}
+rell_data<- full_data %>% 
+  dplyr::select(-scenario, -units, -run_number)
+```
+
+Then with R package `relaimpo`, we create a function that filters by year and variable, and then runs a relative importance test (`calc.relimp`).
+
+```{r rel-relaimpo, include=FALSE}
+library(relaimpo)
+```
+
+
+```{r rel-func, message= FALSE, warning=FALSE, results= FALSE}
+relative_function<- function(yearask, var) {
+  output_year<- rell_data %>%
+  filter(year== yearask, variable== var) %>%
+  dplyr::select(LIFETIME_SOIL, LIFETIME_STRAT, NATURAL_CH4, PREINDUSTRIAL_CH4, value)
+  output_year
+  
+lm_data<- lm(value ~., data= output_year )
+summary(lm_data)
+lm_data
+
+result<- calc.relimp(lm_data, rela= TRUE)
+output<- result$lmg
+output$year<- yearask
+output$variable<- var
+output
+}
+```
+
+Using `lapply`, we can run our function with a selected variable and years (in an `as.list`). This makes our function run as many times as there are years asked for. We then `bind_rows` into a single data frame and repeat for all parameters.
+
+```{r rel-lapply, message= FALSE, warning=FALSE, results= FALSE}
+lap_Co2Concentration<- lapply(as.list(2000:2100), relative_function, "CO2_concentration")
+Rel_Co2Concentration<- bind_rows(lap_Co2Concentration)
+
+lap_RF_tot<- lapply(as.list(2000:2100), relative_function, "RF_tot")
+Rel_RF_tot<- bind_rows(lap_RF_tot)
+
+lap_FCH4<- lapply(as.list(2000:2100), relative_function, "FCH4")
+Rel_FCH4<- bind_rows(lap_FCH4)
+
+lap_global_tas<- lapply(as.list(2000:2100), relative_function, "global_tas")
+Rel_global_tas<- bind_rows(lap_global_tas)
+
+```
+
+Visualizing this data with stacked area graphs can make it more apparent the trend of relative importance of each variable.
+
+```{r rel-graphs, echo= FALSE}
+#Co2 Concentration
+Rel_Co2Concentrationlong<- Rel_Co2Concentration %>%
+  pivot_longer(!c(year, variable), names_to = "parameter", values_to = "value")
+
+Rel_cconc_graph<-
+  ggplot(Rel_Co2Concentrationlong, aes(x= year, y= value, fill= parameter))+
+  geom_area()+
+  labs(title= "Relative Importance Co2 Concentration")
+
+#RF Total
+Rel_RF_totlong<- Rel_RF_tot %>%
+  pivot_longer(!c(year, variable), names_to = "parameter", values_to = "value")
+
+Rel_RF_graph<- 
+  ggplot(Rel_RF_totlong, aes(x= year, y= value, fill= parameter))+
+  geom_area()+
+  labs(title= "Relative Importance RF Total")
+
+#FCH4 
+Rel_FCH4long<- Rel_FCH4 %>%
+  pivot_longer(!c(year, variable), names_to = "parameter", values_to = "value")
+
+Rel_FCH4graph<-  
+  ggplot(Rel_FCH4long, aes(x= year, y= value, fill= parameter))+
+  geom_area()+
+  labs(title= "Relative Importance Radiative Forcing CH4")
+
+#Global Tas
+Rel_global_taslong<- Rel_global_tas %>%
+  pivot_longer(!c(year, variable), names_to = "parameter", values_to = "value")
+
+Rel_global_tasgraph<-  ggplot(Rel_global_taslong, aes(x= year, y= value, fill= parameter))+
+  geom_area()+
+  labs(title= "Relative Importance Global Tas")
+
+Rel_cconc_graph
+Rel_RF_graph
+Rel_FCH4graph
+Rel_global_tasgraph
+```
+
+Summarizing our data for `mean`, `min`, and `max` helps make it more clear the actual values parameter importance was calculated to be. To apply this to all the variable data frames we create a `function` and `group_by(parameter)` before summarizing. 
+
+```{r rel-summary-function}
+stats_function<- function(data){
+  data %>%
+    dplyr:: group_by(parameter) %>%
+    dplyr::select(-year, -variable) %>%
+    summarise(mean= mean(value), max= max(value), min= min(value))
+  }
+```
+
+CO2 concentration is influenced most by `PREINDUSTRIAL_CH4` with both the highest mean and highest range- meaning in every year calculated the parameter consistently was highest. This is consistent throughout the other parameters as well most likely due to the high value of this constant, and therefor high change with a sd of 20%.
+
+```{r rel-summary-CO2}
+stats_Co2Concentration<- stats_function(Rel_Co2Concentrationlong)
+stats_Co2Concentration
+```
+Radiative forcing total 
+
+```{r rel-summary-RFT}
+stats_RFtot<-stats_function(Rel_RF_totlong)
+stats_RFtot
+```
+Radiative forcing FCH4
+
+```{r rel-summary-FCH4}
+stats_FCH4<- stats_function(Rel_FCH4long)
+stats_FCH4
+```
+Global tas
+
+```{r reil-summary-global}
+stats_global<- stats_function(Rel_global_taslong)
+stats_global
+
 shutdown(core)
 ```
 
