@@ -413,48 +413,32 @@ Rel_global_tas<- bind_rows(lap_global_tas)
 
 ```
 
-Visualizing this data with stacked area graphs can make it more apparent the trend of relative importance of each variable.
+Visualizing this data with stacked area graphs can make it more apparent the trend of relative importance of each variable. First we use `pivot_longer` on each data frame, then use `bind_rows` to stack each data frame on one another before graphing. 
 
 ```{r rel-graphs, echo= FALSE}
 #Co2 Concentration
 Rel_Co2Concentrationlong<- Rel_Co2Concentration %>%
   pivot_longer(!c(year, variable), names_to = "parameter", values_to = "value")
 
-Rel_cconc_graph<-
-  ggplot(Rel_Co2Concentrationlong, aes(x= year, y= value, fill= parameter))+
-  geom_area()+
-  labs(title= "Relative Importance Co2 Concentration")
-
 #RF Total
 Rel_RF_totlong<- Rel_RF_tot %>%
   pivot_longer(!c(year, variable), names_to = "parameter", values_to = "value")
-
-Rel_RF_graph<- 
-  ggplot(Rel_RF_totlong, aes(x= year, y= value, fill= parameter))+
-  geom_area()+
-  labs(title= "Relative Importance RF Total")
 
 #FCH4 
 Rel_FCH4long<- Rel_FCH4 %>%
   pivot_longer(!c(year, variable), names_to = "parameter", values_to = "value")
 
-Rel_FCH4graph<-  
-  ggplot(Rel_FCH4long, aes(x= year, y= value, fill= parameter))+
-  geom_area()+
-  labs(title= "Relative Importance Radiative Forcing CH4")
-
 #Global Tas
 Rel_global_taslong<- Rel_global_tas %>%
   pivot_longer(!c(year, variable), names_to = "parameter", values_to = "value")
 
-Rel_global_tasgraph<-  ggplot(Rel_global_taslong, aes(x= year, y= value, fill= parameter))+
-  geom_area()+
-  labs(title= "Relative Importance Global Tas")
+#Bind dfs
+rel_longdata<- bind_rows(Rel_Co2Concentrationlong, Rel_RF_totlong, Rel_FCH4long, Rel_global_taslong)
 
-Rel_cconc_graph
-Rel_RF_graph
-Rel_FCH4graph
-Rel_global_tasgraph
+Rel_graphs<-  ggplot(rel_longdata, aes(x= year, y= value, fill= parameter))+
+  geom_area()+
+  facet_wrap(~variable, scales= "free_y")
+
 ```
 
 Summarizing our data for `mean`, `min`, and `max` helps make it more clear the actual values parameter importance was calculated to be. To apply this to all the variable data frames we create a `function` and `group_by(parameter)` before summarizing. 
@@ -492,6 +476,7 @@ Global tas
 stats_global<- stats_function(Rel_global_taslong)
 stats_global
 
+sessionInfo()
 shutdown(core)
 ```
 
