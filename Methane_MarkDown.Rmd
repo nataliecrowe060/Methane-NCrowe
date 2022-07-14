@@ -197,7 +197,7 @@ results <- fetchvars(core, NA, c(NATURAL_CH4(), PREINDUSTRIAL_CH4(),LIFETIME_SOI
 We then create two data frames- one for each parameter. First isolating the variable, and then calculating mean and standard deviation for the variable's value. The using `rnorm` we create `N_RUNS` values pulled from the normal distribution, putting our results in `data.frame`.
 
 ```{r rnorm2, message= FALSE, warning=FALSE, results= FALSE}
-N_RUNS<- 100
+N_RUNS<- 1000
 
 vars<- results %>%
   dplyr::select(variable, scenario)
@@ -272,10 +272,11 @@ To visualize the spread of our new values we can create a histogram broken into 
 ```{r long-hist}
 long_fdata %>%
   ggplot(aes(x= param_value, fill= parameter))+
-  geom_histogram(alpha= 0.6, binwidth= 7)  +
-   facet_wrap(~parameter, scales = "free")
+  geom_histogram(alpha= 0.6, binwidth= 20)  +
+   facet_wrap(~parameter, scales = "free") +
+  theme(legend.position= "none")
 ```
-To show the differences in values between each run, we can create a bar chart grouping parameter by `run_number`. Although the values for each run stay consistent, we must use the `summarise` and `mean` functions to condense our data frame into single values before graphing. 
+To show the differences in values between a handful of runs, we can create a bar chart grouping parameter by `run_number` and aks for the first 40 rows (or first 10 runs). Although the values for each run stay consistent, we must use the `summarise` and `mean` functions to condense our data frame into single values before graphing. 
 
 ```{r bar_params}
 mean_fdata<- full_data %>%
@@ -284,8 +285,9 @@ mean_fdata<- full_data %>%
 
 long_mdata<- mean_fdata %>%
   pivot_longer(!run_number, names_to= "parameter", values_to= "param_value")
+headlong<- head(long_mdata, n= 40L)
 
-ggplot(long_mdata, aes(y= param_value, x= run_number , fill= parameter )) +
+ggplot(headlong, aes(y= param_value, x= run_number , fill= parameter )) +
   geom_bar(stat="identity",
            position= position_dodge())
 ```
@@ -311,8 +313,10 @@ sum_data<-  long_fdata%>%
 ```{r summary-graph}
 ggplot(sum_data, aes(year)) +
    geom_ribbon(aes(ymin= Min_val, ymax= Max_val, fill= variable), alpha= 0.3) +
-  geom_line(aes(y= Mean_val, color= variable), size= 0.5) +
-  facet_wrap(~variable, scales = "free")
+  geom_ribbon(aes(ymin= (Mean_val - SD_val), ymax= (Mean_val + SD_val), fill= variable), alpha= 0.7) +
+  geom_line(aes(y= Mean_val), size= 0.5) +
+  facet_wrap(~variable, scales = "free")+
+  theme(legend.position= "none")
 
 ```
 
@@ -415,7 +419,7 @@ Rel_global_tas<- bind_rows(lap_global_tas)
 
 Visualizing this data with stacked area graphs can make it more apparent the trend of relative importance of each variable. First we use `pivot_longer` on each data frame, then use `bind_rows` to stack each data frame on one another before graphing. 
 
-```{r rel-graphs, echo= FALSE}
+```{r rel-graphs}
 #Co2 Concentration
 Rel_Co2Concentrationlong<- Rel_Co2Concentration %>%
   pivot_longer(!c(year, variable), names_to = "parameter", values_to = "value")
@@ -437,7 +441,8 @@ rel_longdata<- bind_rows(Rel_Co2Concentrationlong, Rel_RF_totlong, Rel_FCH4long,
 
 Rel_graphs<-  ggplot(rel_longdata, aes(x= year, y= value, fill= parameter))+
   geom_area()+
-  facet_wrap(~variable, scales= "free_y")
+  facet_wrap(~variable, scales= "free_y")+
+  coord_cartesian(ylim= c(0.6, 1))
 
 ```
 
