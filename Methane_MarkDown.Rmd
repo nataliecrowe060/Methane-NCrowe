@@ -239,7 +239,7 @@ multi_param<- function(core, pdata){ #create input for function
     setvar(core, NA, var, pdata[p][[1]], unit) #set row vars from old to new values
     reset(core) #reset core to run new values
     run(core) #run new params
-    result<- fetchvars(core, 2000:2100, c(RF_CH4(), CONCENTRATIONS_CO2(), RF_TOTAL(), GLOBAL_TAS())) #results for x years
+    result<- fetchvars(core, 2000:2100, c(RF_CH4(), CONCENTRATIONS_CH4(), RF_TOTAL(), GLOBAL_TAS())) #results for x years
   }
   result
 }
@@ -403,8 +403,8 @@ output
 Using `lapply`, we can run our function with a selected variable and years (in an `as.list`). This makes our function run as many times as there are years asked for. We then `bind_rows` into a single data frame and repeat for all parameters.
 
 ```{r rel-lapply, message= FALSE, warning=FALSE, results= FALSE}
-lap_Co2Concentration<- lapply(as.list(2000:2100), relative_function, "CO2_concentration")
-Rel_Co2Concentration<- bind_rows(lap_Co2Concentration)
+lap_Ch4Concentration<- lapply(as.list(2000:2100), relative_function, "CH4_concentration")
+Rel_Ch4Concentration<- bind_rows(lap_Ch4Concentration)
 
 lap_RF_tot<- lapply(as.list(2000:2100), relative_function, "RF_tot")
 Rel_RF_tot<- bind_rows(lap_RF_tot)
@@ -420,8 +420,8 @@ Rel_global_tas<- bind_rows(lap_global_tas)
 Visualizing this data with stacked area graphs can make it more apparent the trend of relative importance of each variable. First we use `pivot_longer` on each data frame, then use `bind_rows` to stack each data frame on one another before graphing. 
 
 ```{r rel-graphs}
-#Co2 Concentration
-Rel_Co2Concentrationlong<- Rel_Co2Concentration %>%
+#Ch4 Concentration
+Rel_Ch4Concentrationlong<- Rel_Ch4Concentration %>%
   pivot_longer(!c(year, variable), names_to = "parameter", values_to = "value")
 
 #RF Total
@@ -437,12 +437,13 @@ Rel_global_taslong<- Rel_global_tas %>%
   pivot_longer(!c(year, variable), names_to = "parameter", values_to = "value")
 
 #Bind dfs
-rel_longdata<- bind_rows(Rel_Co2Concentrationlong, Rel_RF_totlong, Rel_FCH4long, Rel_global_taslong)
+rel_longdata<- bind_rows(Rel_Ch4Concentrationlong, Rel_RF_totlong, Rel_FCH4long, Rel_global_taslong)
 
 Rel_graphs<-  ggplot(rel_longdata, aes(x= year, y= value, fill= parameter))+
   geom_area()+
-  facet_wrap(~variable, scales= "free_y")+
-  coord_cartesian(ylim= c(0.6, 1))
+  facet_wrap(~variable, scales= "free_y")#+
+  #coord_cartesian(ylim= c(0.6, 1))
+Rel_graphs
 
 ```
 
@@ -457,11 +458,11 @@ stats_function<- function(data){
   }
 ```
 
-CO2 concentration is influenced most by `PREINDUSTRIAL_CH4` with both the highest mean and highest range- meaning in every year calculated the parameter consistently was highest. This is consistent throughout the other parameters as well most likely due to the high value of this constant, and therefor high change with a sd of 20%.
+Ch4 concentration is influenced most by `PREINDUSTRIAL_CH4` with both the highest mean and highest range- meaning in every year calculated the parameter consistently was highest. This is consistent throughout the other parameters as well most likely due to the high value of this constant, and therefor high change with a sd of 20%.
 
-```{r rel-summary-CO2}
-stats_Co2Concentration<- stats_function(Rel_Co2Concentrationlong)
-stats_Co2Concentration
+```{r rel-summary-Ch4}
+stats_Ch4Concentration<- stats_function(Rel_Ch4Concentrationlong)
+stats_Ch4Concentration
 ```
 Radiative forcing total 
 
