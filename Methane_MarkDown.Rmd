@@ -258,7 +258,7 @@ output_data<- output %>% bind_rows() #create a data frame with output
 full_data<- left_join(output_data, data, by= "run_number") #add in param values columns to results of loop df by pairing with row_number column
 ```
 
-### Graphing multiple parameters
+## Graphing multiple parameters
 
 Now that we've created multi-parameter data, we can visualize our results. Using the `pivot_longer` function from `tidyr` we first group our parameters into two columns: `parameter` and `param_value`. This will make graphing much easier, since we are now only working with one variable type.
 
@@ -485,4 +485,3 @@ stats_global
 sessionInfo()
 shutdown(core)
 ```
-
