@@ -45,9 +45,9 @@ Now we have all the things we need to build a simple plot of methane emissions b
 results %>% 
   filter(variable == EMISSIONS_CH4()) %>% 
   ggplot(aes(x= year, y= value))+
-    geom_line(color="blue")+
-    labs(x = "Year",
-         y = "Methane Emissions (Tg)",
+    geom_line(color= "red")+
+    labs(x = "year",
+         y = "methane Emissions (Tg)",
          title = "Methane Emissions 1745-2100 in SSP245")
 ```
 
@@ -59,9 +59,9 @@ By changing the input `EMISSION_CH4()` to `CONCENTRATIONS_CH4()` we can replicat
 results %>% 
   filter(variable == CONCENTRATIONS_CH4()) %>% 
   ggplot(aes(x= year, y= value))+
-    geom_line(color= "red")+
-    labs(x = "Year",
-         y = "Methane Concentration (ppbv)",
+    geom_line(color= "blue")+
+    labs(x = "year",
+         y = "methane concentration (ppbV)",
          title = "Methane Concentration 1745-2100 in SSP245")
 ```
 
@@ -91,10 +91,10 @@ We can then plot for the hector and NOAA data at once.
 ggplot() +
   geom_line(data = noaa_data, aes(x = year, y = mean, color = "NOAA")) +
   geom_line(data = hector_data, aes(x = year, y = mean, color = "SSP245 (Hector)")) +
-  labs(x = "Year", 
-       y = "ppb",
+  labs(x = "year", 
+       y = "ppbV",
        title= "Methane Concentration 1984-2021 in SSP245 and NOAA",
-       color = "Source")
+       color = "source") 
 ```
 
 
@@ -105,7 +105,7 @@ We can put these two results into a single graph...
 ```{r Comparison-graph}
 ggplot(data= results, aes(x= year, y= value, color= units))+
     geom_line()+
-    labs(x = "Year",
+    labs(x = "year",
          y = NULL,
          title = "Methane Concentration/Emission 1745-2100 in SSP245",
          color = "Units") + facet_wrap(~variable)
@@ -159,8 +159,8 @@ ggplot(sensitivity_emission) +
   aes(x = year, y = value, color = parameter_value, group = parameter_value) +
   geom_line() +
   facet_wrap(~variable, scales = "free") +
-  labs(color = "NATURAL CH4 (Tg)") +
-  scale_color_viridis_c() 
+  labs(color = ("Natural CH4 (Tg)")) +
+  scale_color_gradient(low= "blue", high= "red") 
 ```
 
 ### Adding a Histogram 
@@ -175,8 +175,8 @@ data<- data.frame(value= rnorm(1000, meann, sdn))
 Then we can use `ggplot2` to create a histogram with the randomized values.
 ```{r hist}
 ggplot(data, aes(x=value))+
-  geom_histogram(binwidth = 10)+
-  labs( x= "Natural CH4 Level", y= "count", main= "Natural CH4 Histogram")
+  geom_histogram(binwidth = 10, color="red", fill="blue")+
+  labs( x= "Natural CH4 Level", y= "count", main= "natural CH4 Histogram")
 ```
 
 
