@@ -47,7 +47,7 @@ results %>%
   ggplot(aes(x= year, y= value))+
     geom_line(color= "red")+
     labs(x = "year",
-         y = "methane Emissions (Tg)",
+         y = "Methane emissions (Tg)",
          title = "Methane Emissions 1745-2100 in SSP245")
 ```
 
@@ -61,7 +61,7 @@ results %>%
   ggplot(aes(x= year, y= value))+
     geom_line(color= "blue")+
     labs(x = "year",
-         y = "methane concentration (ppbV)",
+         y = "Methane concentration (ppbV)",
          title = "Methane Concentration 1745-2100 in SSP245")
 ```
 
@@ -107,9 +107,10 @@ ggplot(data= results, aes(x= year, y= value, color= units))+
     geom_line()+
     labs(x = "year",
          y = NULL,
-         title = "Methane Concentration/Emission 1745-2100 in SSP245",
+         title = "Methane Concentrations and Emissions 1745-2100 in SSP245",
          color = "Units") + facet_wrap(~variable)
 ```
+
 ... to show our data side-by-side.
 
 ## Sensitivity Analysis
@@ -159,8 +160,8 @@ ggplot(sensitivity_emission) +
   aes(x = year, y = value, color = parameter_value, group = parameter_value) +
   geom_line() +
   facet_wrap(~variable, scales = "free") +
-  labs(color = ("Natural CH4 (Tg)")) +
-  scale_color_gradient(low= "blue", high= "red") 
+  labs(color = ("Natural CH4 (Tg)"), title = "Natural Methane Sensitivity Analysis") +
+  scale_color_gradient(low= "blue", high= "red")
 ```
 
 ### Adding a Histogram 
@@ -176,7 +177,7 @@ Then we can use `ggplot2` to create a histogram with the randomized values.
 ```{r hist}
 ggplot(data, aes(x=value))+
   geom_histogram(binwidth = 10, color="red", fill="blue")+
-  labs( x= "Natural CH4 Level", y= "count", main= "natural CH4 Histogram")
+  labs( x= "Natural CH4 Level", y= "count", main= "Natural Methane Histogram")
 ```
 
 
@@ -274,14 +275,16 @@ long_fdata %>%
   ggplot(aes(x= param_value, fill= parameter))+
   geom_histogram(alpha= 0.6, binwidth= 20)  +
    facet_wrap(~parameter, scales = "free") +
-  theme(legend.position= "none")
+  theme(legend.position= "none")+
+  scale_fill_brewer(palette="Set1")+
+  labs(title = "Methane Sensitivity Analysis Histogram: Multiple Parameters")
 ```
 To show the differences in values between a handful of runs, we can create a bar chart grouping parameter by `run_number` and aks for the first 40 rows (or first 10 runs). Although the values for each run stay consistent, we must use the `summarise` and `mean` functions to condense our data frame into single values before graphing. 
 
 ```{r bar_params}
 mean_fdata<- full_data %>%
   group_by(run_number) %>%
-  summarise("Mean of natural emmissions(TgCH4)" = mean(NATURAL_CH4), "Mean of preindustrial levels(ppbvCH4)" = mean(PREINDUSTRIAL_CH4), "Mean lifetime in soil(years)"= mean(LIFETIME_SOIL), "Mean lifetime in stratosphere(years)"= mean(LIFETIME_STRAT))
+  summarise("Mean of natural emmissions (Tg)" = mean(NATURAL_CH4), "Mean of preindustrial levels (ppbV)" = mean(PREINDUSTRIAL_CH4), "Mean lifetime in soil (years)"= mean(LIFETIME_SOIL), "Mean lifetime in stratosphere (years)"= mean(LIFETIME_STRAT))
 
 long_mdata<- mean_fdata %>%
   pivot_longer(!run_number, names_to= "parameter", values_to= "param_value")
@@ -289,7 +292,9 @@ headlong<- head(long_mdata, n= 40L)
 
 ggplot(headlong, aes(y= param_value, x= run_number , fill= parameter )) +
   geom_bar(stat="identity",
-           position= position_dodge())
+           position= position_dodge())+
+  labs(title = "Methane Sensitivity Analysis Barchart: Multiple Parameters")+
+  scale_fill_brewer(palette="Set1")
 ```
 
 We can also create a line graph for our output values. This is the same as the sensitivity analysis graph earlier on, only now with more input parameters. This graph isn't ideal if we are looping more than a handful of times...
@@ -298,7 +303,8 @@ We can also create a line graph for our output values. This is the same as the s
 ggplot(full_data, aes(y= value, x=  year, color= run_number, group = run_number)) +
   geom_line() +
   facet_wrap(~variable, scales = "free_y")+
-  scale_color_viridis_c() 
+  scale_color_gradient(low= "red", high= "blue")+
+  labs(title = "Methane Sensitivity Analysis: Multiple Parameters")
 ```
 
 ... A better graph for our runs is `geom_ribbon`, which graphs the mean of our outputs each year, as well as the maximum and minimum values. First we find the mean, standard deviation, minimum and maximum using `summarize` - then we can plot the results.
@@ -316,7 +322,9 @@ ggplot(sum_data, aes(year)) +
   geom_ribbon(aes(ymin= (Mean_val - SD_val), ymax= (Mean_val + SD_val), fill= variable), alpha= 0.7) +
   geom_line(aes(y= Mean_val), size= 0.5) +
   facet_wrap(~variable, scales = "free")+
-  theme(legend.position= "none")
+  theme(legend.position= "none")+
+  scale_fill_brewer(palette="Set1")+
+  labs(y= "mean value", x= "year", title = "Methane Sensitivity Summary: Multiple Parameters")
 
 ```
 
@@ -334,6 +342,7 @@ pair_data<- full_data %>%
   pivot_wider(names_from = variable, values_from = value)
 
 ggpairs(pair_data, aes(), upper = list(continuous = "blank"))
+  
 
 ```
 
@@ -361,7 +370,8 @@ ggplot(exp_data, aes(year)) +
   geom_line(aes(y= Mean_multi, color= variable), size= 0.5) +
   geom_line(aes(y= Mean_sen, color= variable), size= 0.5)+
   facet_wrap(~variable, scales = "free_y")+
-  labs( title= "Multi Parameter vs Natural CH4 Run", y= "Mean")
+  labs( title= "Multiple Parameters vs Natural Methane Sensitivity", y= "mean")+
+  scale_fill_brewer(palette="Set1")
 ```
 
 
@@ -441,7 +451,9 @@ rel_longdata<- bind_rows(Rel_Ch4Concentrationlong, Rel_RF_totlong, Rel_FCH4long,
 
 Rel_graphs<-  ggplot(rel_longdata, aes(x= year, y= value, fill= parameter))+
   geom_area()+
-  facet_wrap(~variable, scales= "free_y")#+
+  facet_wrap(~variable, scales= "free_y")+
+  scale_fill_brewer(palette="Set1")+
+  labs( title= "Parameter Relative Importance Comparisons")#+
   #coord_cartesian(ylim= c(0.6, 1))
 Rel_graphs
 
