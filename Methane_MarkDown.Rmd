@@ -163,13 +163,13 @@ sensitivity_emission <- run_with_param_range(core, NATURAL_CH4(), ch4_seq)
 Once we have our differing model outputs we can create a graph. Using the graph function `facet_wrap`to separate the results based on variable. 
 
 ```{r sen-graph}
-cool_names<- c("Methane Concentration", "Methane Emissions")
-names(cool_names)<- c("CH4_concentration", "CH4_emissions")
+cool_names<- c("Carbon Dioxide Concentration", "Radiative Forcing of Methane", "Global TAS", "Radiative Forcing Total")
+names(cool_names)<- c("CO2_concentration", "FCH4", "global_tas", "RF_tot")
 
 ggplot(sensitivity_emission) +
   aes(x = year, y = value, color = parameter_value, group = parameter_value) +
   geom_line() +
-  facet_wrap(~variable, scales = "free") +
+  facet_wrap(~variable, scales = "free", labeller=labeller(variable=cool_names)) +
   labs(color = "Natural Methane (Tg)", title = expression(Natural~CH[4]~Sensitivity~Analysis), x= "Value", y= "Year") +
   scale_color_gradient(low= "light blue", high= "red")+
   theme_minimal()
@@ -283,13 +283,16 @@ long_fdata<- full_data %>%
 To visualize the spread of our new values we can create a histogram broken into four windows with `facet_wrap`.
 
 ```{r long-hist}
+lool_names<- c("Lifetime in Soil", "Lifetime in Stratosphere", "Natural Methane", "Preindustrial Methane")
+names(lool_names)<- c("LIFETIME_SOIL", "LIFETIME_STRAT", "NATURAL_CH4", "PREINDUSTRIAL_CH4")
+
 long_fdata %>%
   ggplot(aes(x= param_value, fill= parameter))+
   geom_histogram(alpha= 0.6, binwidth= 20)  +
-   facet_wrap(~parameter, scales = "free") +
+   facet_wrap(~parameter, scales = "free", labeller=labeller(parameter=lool_names)) +
   theme(legend.position= "none")+
   scale_fill_brewer(palette="Set1")+
-  labs(title = expression(CH[4]~Sensitivity~Analysis~Histogram))+
+  labs(title = expression(CH[4]~Sensitivity~Analysis~Histogram), x= "Parameter Value", y= "Count")+
   theme_minimal()
 
 ```
@@ -298,7 +301,7 @@ To show the differences in values between a handful of runs, we can create a bar
 ```{r bar_params}
 mean_fdata<- full_data %>%
   group_by(run_number) %>%
-  summarise("Mean of natural emmissions (Tg)" = mean(NATURAL_CH4), "Mean of preindustrial levels (ppbV)" = mean(PREINDUSTRIAL_CH4), "Mean lifetime in soil (years)"= mean(LIFETIME_SOIL), "Mean lifetime in stratosphere (years)"= mean(LIFETIME_STRAT))
+  summarise("Mean of Natural Emmissions (Tg)" = mean(NATURAL_CH4), "Mean of Preindustrial Levels (ppbV)" = mean(PREINDUSTRIAL_CH4), "Mean Lifetime in Soil (years)"= mean(LIFETIME_SOIL), "Mean Lifetime in Stratosphere (years)"= mean(LIFETIME_STRAT))
 
 long_mdata<- mean_fdata %>%
   pivot_longer(!run_number, names_to= "parameter", values_to= "param_value")
@@ -315,9 +318,12 @@ ggplot(headlong, aes(y= param_value, x= run_number , fill= parameter )) +
 We can also create a line graph for our output values. This is the same as the sensitivity analysis graph earlier on, only now with more input parameters. This graph isn't ideal if we are looping more than a handful of times...
 
 ```{r multi_sensitivity}
+fool_names<- c("Methane Concentration", "Radiative Forcing of Methane", "Global TAS", "Radiative Forcing Total")
+names(fool_names)<- c("CH4_concentration", "FCH4", "global_tas", "RF_tot")
+
 ggplot(full_data, aes(y= value, x=  year, color= run_number, group = run_number)) +
   geom_line() +
-  facet_wrap(~variable, scales = "free_y")+
+  facet_wrap(~variable, scales = "free_y", labeller=labeller(variable=fool_names))+
   scale_color_gradient(low= "red", high= "light blue")+
   labs(title = expression(CH[4]~Sensitivity~Analysis), y= "Value", x= "Year")+
   theme_minimal()
@@ -337,10 +343,10 @@ ggplot(sum_data, aes(year)) +
    geom_ribbon(aes(ymin= Min_val, ymax= Max_val, fill= variable), alpha= 0.3) +
   geom_ribbon(aes(ymin= (Mean_val - SD_val), ymax= (Mean_val + SD_val), fill= variable), alpha= 0.7) +
   geom_line(aes(y= Mean_val), size= 0.5) +
-  facet_wrap(~variable, scales = "free")+
+  facet_wrap(~variable, scales = "free", labeller=labeller(variable=fool_names))+
   theme(legend.position= "none")+
   scale_fill_brewer(palette="Set1")+
-  labs(y= "Mean Value", x= "Year", title = expression(CH[4]~Sensitivity~Summary))+
+  labs(y= "Mean Value", x= "Year", title = expression(CH[4]~Sensitivity~Outcomes~Summary))+
   theme_minimal()
 
 ```
@@ -386,8 +392,8 @@ ggplot(exp_data, aes(year)) +
   geom_ribbon(aes(ymin= Min_sen, ymax= Max_sen), fill= "black") +
   geom_line(aes(y= Mean_multi, color= variable), size= 0.5) +
   geom_line(aes(y= Mean_sen, color= variable), size= 0.5)+
-  facet_wrap(~variable, scales = "free_y")+
-  labs( title= expression(Multiple~Parameters~vs~Natural~CH[4]~Sensitivity), y= "Mean")+
+  facet_wrap(~variable, scales = "free_y", labeller=labeller(variable=fool_names))+
+  labs( title= expression(Multiple~Parameters~Outcomes~vs~Natural~CH[4]~Sensitivity), y= "Mean")+
   scale_fill_brewer(palette="Set1")+
   theme_minimal()
 ```
@@ -469,7 +475,7 @@ rel_longdata<- bind_rows(Rel_Ch4Concentrationlong, Rel_RF_totlong, Rel_FCH4long,
 
 Rel_graphs<-  ggplot(rel_longdata, aes(x= year, y= value, fill= parameter))+
   geom_area()+
-  facet_wrap(~variable, scales= "free_y")+
+  facet_wrap(~variable, scales= "free_y", labeller=labeller(variable=fool_names))+
   scale_fill_brewer(palette="Set1")+
   labs( title= "Parameter Relative Importance Comparisons")+
   theme_minimal()#+
